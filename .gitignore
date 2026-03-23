@@ -8,3 +8,4 @@ apps/api/dist
 apps/web/dist
 apps/api/.env
 apps/web/.env
+.build.env
