@@ -2,14 +2,14 @@ version: "3.8"
 
 services:
   agenda_api:
-    image: kesassessoria/agenda-api:latest
+    image: williamwilmer10/agenda-backend:latest
     networks:
       - kesnet
     environment:
       - NODE_ENV=production
       - PORT=3333
-      - DATABASE_URL=postgresql://postgres:ALTERE_SENHA_FORTE@agenda_postgres:5432/kes_agenda?schema=public
-      - JWT_SECRET=ALTERE_PARA_UM_JWT_SECRET_FORTE
+      - DATABASE_URL=postgresql://postgres:${AGENDA_POSTGRES_PASSWORD}@agenda_postgres:5432/kes_agenda?schema=public
+      - JWT_SECRET=${AGENDA_JWT_SECRET}
       - JWT_EXPIRES_IN=8h
       - WEB_URL=https://agenda.kesassessoria.com
       - API_URL=https://apiagenda.kesassessoria.com/api
@@ -38,6 +38,7 @@ services:
           memory: 1024M
       labels:
         - traefik.enable=1
+        - traefik.docker.network=kesnet
         - traefik.http.routers.agenda-api.rule=Host(`apiagenda.kesassessoria.com`)
         - traefik.http.routers.agenda-api.entrypoints=websecure
         - traefik.http.routers.agenda-api.priority=100
@@ -47,7 +48,7 @@ services:
         - traefik.http.services.agenda-api.loadbalancer.passHostHeader=true
 
   agenda_web:
-    image: kesassessoria/agenda-web:latest
+    image: williamwilmer10/agenda-frontend:latest
     networks:
       - kesnet
     healthcheck:
@@ -70,6 +71,7 @@ services:
           memory: 512M
       labels:
         - traefik.enable=1
+        - traefik.docker.network=kesnet
         - traefik.http.routers.agenda-web.rule=Host(`agenda.kesassessoria.com`)
         - traefik.http.routers.agenda-web.entrypoints=websecure
         - traefik.http.routers.agenda-web.priority=1
@@ -87,7 +89,7 @@ services:
     environment:
       - POSTGRES_DB=kes_agenda
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=ALTERE_SENHA_FORTE
+      - POSTGRES_PASSWORD=${AGENDA_POSTGRES_PASSWORD}
       - TZ=America/Sao_Paulo
       - PGTZ=America/Sao_Paulo
     healthcheck:
@@ -115,3 +117,4 @@ networks:
   kesnet:
     external: true
     name: kesnet
+
