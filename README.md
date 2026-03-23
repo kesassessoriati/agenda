@@ -1,6 +1,6 @@
 # KES Meeting Platform
 
-Sistema full stack de agendas e compromissos inspirado no módulo legado de `atendzappy_versao2`, reescrito com:
+Sistema full stack de agendas e compromissos com arquitetura multi-tenant por workspace/empresa.
 
 - `React + TypeScript + MUI + React Query + Zustand`
 - `Node.js + TypeScript + Express + Prisma + PostgreSQL + JWT`
@@ -8,8 +8,29 @@ Sistema full stack de agendas e compromissos inspirado no módulo legado de `ate
 
 ## Estrutura
 
-- `apps/api`: backend REST, regras de negócio, Prisma e autenticação
-- `apps/web`: frontend React com telas de agendas e compromissos
+- `apps/api`: backend REST, regras de negócio, Prisma, autenticação tenant-scoped e gestão de equipe
+- `apps/web`: frontend React com telas de agendas, compromissos, administração e convites
+
+## Multi-tenancy
+
+- Cada `Company` funciona como tenant/workspace isolado.
+- Usuários são globais e entram em workspaces via `Membership`.
+- A sessão sempre opera com um workspace ativo (`membershipId` + `companyId` validados no backend).
+- Owners/Admins gerenciam equipe, convites e acesso às agendas.
+- Agendas, compromissos, integrações e dados operacionais continuam sempre escopados por `companyId`.
+
+## Convites por e-mail
+
+O repositório atual não possui um provedor de envio de e-mail configurado.
+
+Por isso, o fluxo implementado é:
+
+- owner/admin cria o convite
+- o backend gera um token seguro hasheado e armazena apenas o hash
+- a API retorna um `invitationUrl` para entrega manual
+- o convidado acessa `/convites/:token` e aceita o workspace correto
+
+Quando um serviço de e-mail for adicionado, basta conectar a entrega ao retorno do endpoint de criação de convite.
 
 ## Execução local
 
@@ -38,8 +59,8 @@ npm run dev:web
 
 ## Credenciais demo
 
-- Admin: `admin@kes.local` / `admin123`
-- Usuário: `consultor@kes.local` / `user12345`
+- Admin/Owner: `admin@kes.local` / `admin123`
+- Usuário membro: `consultor@kes.local` / `user12345`
 
 ## Comandos úteis
 

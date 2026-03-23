@@ -2,8 +2,8 @@ import AddRounded from "@mui/icons-material/AddRounded";
 import CalendarMonthRounded from "@mui/icons-material/CalendarMonthRounded";
 import DeleteOutlineRounded from "@mui/icons-material/DeleteOutlineRounded";
 import EditRounded from "@mui/icons-material/EditRounded";
-import LinkRounded from "@mui/icons-material/LinkRounded";
 import LinkOffRounded from "@mui/icons-material/LinkOffRounded";
+import LinkRounded from "@mui/icons-material/LinkRounded";
 import RefreshRounded from "@mui/icons-material/RefreshRounded";
 import {
   Avatar,
@@ -45,20 +45,22 @@ export function SchedulesPage() {
   const queryClient = useQueryClient();
   const showToast = useUiStore((state) => state.showToast);
   const user = useAuthStore((state) => state.user);
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role !== "MEMBER";
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null);
 
   const schedulesQuery = useQuery({
-    queryKey: ["schedules"],
+    queryKey: ["schedules", user?.companyId],
     queryFn: () => fetchSchedules(),
+    enabled: Boolean(user?.companyId),
   });
 
   const usersQuery = useQuery({
-    queryKey: ["assignable-users"],
+    queryKey: ["assignable-users", user?.companyId],
     queryFn: fetchAssignableUsers,
+    enabled: Boolean(user?.companyId),
   });
 
   const mutation = useMutation({
@@ -71,7 +73,7 @@ export function SchedulesPage() {
     },
     onSuccess: () => {
       showToast(selectedSchedule ? "Agenda atualizada." : "Agenda criada.", "success");
-      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["schedules", user?.companyId] });
       setDialogOpen(false);
       setSelectedSchedule(null);
     },
@@ -82,7 +84,7 @@ export function SchedulesPage() {
     mutationFn: deleteSchedule,
     onSuccess: () => {
       showToast("Agenda removida.", "success");
-      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["schedules", user?.companyId] });
       setScheduleToDelete(null);
     },
     onError: (error) => showToast(getErrorMessage(error), "error"),
@@ -100,7 +102,7 @@ export function SchedulesPage() {
     mutationFn: disconnectGoogleCalendar,
     onSuccess: () => {
       showToast("Integração Google removida da agenda.", "success");
-      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["schedules", user?.companyId] });
     },
     onError: (error) => showToast(getErrorMessage(error), "error"),
   });
@@ -238,7 +240,12 @@ export function SchedulesPage() {
                     >
                       Google
                     </Button>
-                    <IconButton onClick={() => { setSelectedSchedule(schedule); setDialogOpen(true); }}>
+                    <IconButton
+                      onClick={() => {
+                        setSelectedSchedule(schedule);
+                        setDialogOpen(true);
+                      }}
+                    >
                       <EditRounded />
                     </IconButton>
                     <IconButton color="error" onClick={() => setScheduleToDelete(schedule)}>

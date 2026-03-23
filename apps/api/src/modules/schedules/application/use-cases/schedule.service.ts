@@ -1,16 +1,11 @@
-import { ScheduleUserRole, UserRole, type Prisma } from "@prisma/client";
+import { ScheduleUserRole, type Prisma } from "@prisma/client";
 
+import { isWorkspaceAdmin, type AuthContext } from "../../../../shared/auth/context.js";
 import { env } from "../../../../shared/config/env.js";
 import { AppError } from "../../../../shared/errors/app-error.js";
 import { demoStore } from "../../../../shared/lib/demo-store.js";
 import { prisma } from "../../../../shared/lib/prisma.js";
 import { createScheduleSchema, listSchedulesQuerySchema, updateScheduleSchema } from "../dto/schedule.schemas.js";
-
-type AuthContext = {
-  companyId: string;
-  userId: string;
-  role: UserRole;
-};
 
 const scheduleInclude = {
   owner: {
@@ -18,7 +13,6 @@ const scheduleInclude = {
       id: true,
       name: true,
       email: true,
-      role: true,
     },
   },
   assignments: {
@@ -28,7 +22,6 @@ const scheduleInclude = {
           id: true,
           name: true,
           email: true,
-          role: true,
           color: true,
         },
       },
@@ -60,7 +53,7 @@ const scheduleInclude = {
 } satisfies Prisma.ScheduleInclude;
 
 async function getAccessibleScheduleIds(auth: AuthContext) {
-  if (auth.role === "ADMIN") {
+  if (isWorkspaceAdmin(auth.role)) {
     return undefined;
   }
 
@@ -90,7 +83,7 @@ async function assertScheduleAccess(auth: AuthContext, scheduleId: string) {
     throw new AppError("Agenda não encontrada.", 404);
   }
 
-  if (auth.role === "ADMIN") {
+  if (isWorkspaceAdmin(auth.role)) {
     return schedule;
   }
 
@@ -100,6 +93,21 @@ async function assertScheduleAccess(auth: AuthContext, scheduleId: string) {
   }
 
   return schedule;
+}
+
+async function assertTenantUsers(companyId: string, userIds: string[]) {
+  const memberships = await prisma.membership.findMany({
+    where: {
+      companyId,
+      active: true,
+      userId: { in: userIds },
+    },
+    select: { userId: true },
+  });
+
+  if (memberships.length !== userIds.length) {
+    throw new AppError("Há usuários inválidos na configuração da agenda.", 422);
+  }
 }
 
 function defaultWorkingHours() {
@@ -174,21 +182,9 @@ export async function createSchedule(auth: AuthContext, input: unknown) {
     });
   }
 
-  const ownerId = auth.role === "ADMIN" ? payload.ownerId ?? auth.userId : auth.userId;
+  const ownerId = isWorkspaceAdmin(auth.role) ? payload.ownerId ?? auth.userId : auth.userId;
   const assignedUserIds = Array.from(new Set([ownerId, ...payload.assignedUserIds]));
-
-  const validUsers = await prisma.user.findMany({
-    where: {
-      companyId: auth.companyId,
-      active: true,
-      id: { in: assignedUserIds },
-    },
-    select: { id: true },
-  });
-
-  if (validUsers.length !== assignedUserIds.length) {
-    throw new AppError("Há usuários inválidos na configuração da agenda.", 422);
-  }
+  await assertTenantUsers(auth.companyId, assignedUserIds);
 
   return prisma.schedule.create({
     data: {
@@ -240,11 +236,15 @@ export async function updateSchedule(auth: AuthContext, scheduleId: string, inpu
 
   const current = await assertScheduleAccess(auth, scheduleId);
 
-  const ownerId = auth.role === "ADMIN" ? payload.ownerId ?? current.ownerId : current.ownerId;
+  const ownerId = isWorkspaceAdmin(auth.role) ? payload.ownerId ?? current.ownerId : current.ownerId;
   const assignedUserIds =
-    auth.role === "ADMIN" && payload.assignedUserIds
+    isWorkspaceAdmin(auth.role) && payload.assignedUserIds
       ? Array.from(new Set([ownerId, ...payload.assignedUserIds]))
       : current.assignments.map((assignment) => assignment.userId);
+
+  if (isWorkspaceAdmin(auth.role) && payload.assignedUserIds) {
+    await assertTenantUsers(auth.companyId, assignedUserIds);
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.schedule.update({
@@ -259,7 +259,7 @@ export async function updateSchedule(auth: AuthContext, scheduleId: string, inpu
       },
     });
 
-    if (auth.role === "ADMIN" && payload.assignedUserIds) {
+    if (isWorkspaceAdmin(auth.role) && payload.assignedUserIds) {
       await tx.scheduleUser.deleteMany({ where: { scheduleId } });
       await tx.scheduleUser.createMany({
         data: assignedUserIds.map((userId) => ({

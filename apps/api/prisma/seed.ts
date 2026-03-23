@@ -1,4 +1,4 @@
-import { AppointmentStatus, PrismaClient, ScheduleUserRole, UserRole } from "@prisma/client";
+import { AppointmentStatus, PrismaClient, ScheduleUserRole } from "@prisma/client";
 import { hash } from "bcryptjs";
 import dayjs from "dayjs";
 
@@ -22,11 +22,9 @@ async function main() {
     where: { email: "admin@kes.local" },
     update: {},
     create: {
-      companyId: company.id,
       name: "Administrador",
       email: "admin@kes.local",
       passwordHash: adminPassword,
-      role: UserRole.ADMIN,
       color: "#0f172a",
     },
   });
@@ -35,12 +33,48 @@ async function main() {
     where: { email: "consultor@kes.local" },
     update: {},
     create: {
-      companyId: company.id,
       name: "Consultor Agenda",
       email: "consultor@kes.local",
       passwordHash: memberPassword,
-      role: UserRole.MEMBER,
       color: "#2563eb",
+    },
+  });
+
+  await prisma.membership.upsert({
+    where: {
+      companyId_userId: {
+        companyId: company.id,
+        userId: admin.id,
+      },
+    },
+    update: {
+      role: "OWNER",
+      active: true,
+    },
+    create: {
+      companyId: company.id,
+      userId: admin.id,
+      role: "OWNER",
+      active: true,
+    },
+  });
+
+  await prisma.membership.upsert({
+    where: {
+      companyId_userId: {
+        companyId: company.id,
+        userId: member.id,
+      },
+    },
+    update: {
+      role: "MEMBER",
+      active: true,
+    },
+    create: {
+      companyId: company.id,
+      userId: member.id,
+      role: "MEMBER",
+      active: true,
     },
   });
 

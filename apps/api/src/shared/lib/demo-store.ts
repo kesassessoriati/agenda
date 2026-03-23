@@ -1,13 +1,14 @@
-import { AppointmentStatus, ScheduleUserRole, UserRole } from "@prisma/client";
+import { AppointmentStatus, MembershipRole, ScheduleUserRole } from "@prisma/client";
 import { hashSync } from "bcryptjs";
 
+import { isWorkspaceAdmin } from "../auth/context.js";
 import { AppError } from "../errors/app-error.js";
 import { dayjs } from "./dayjs.js";
 
 type AuthContext = {
   userId: string;
   companyId: string;
-  role: UserRole;
+  role: MembershipRole;
 };
 
 type DemoUser = {
@@ -16,10 +17,12 @@ type DemoUser = {
   name: string;
   email: string;
   passwordHash: string;
-  role: UserRole;
+  role: MembershipRole;
   active: boolean;
   color: string | null;
   timezone: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type DemoWorkingHour = {
@@ -94,10 +97,12 @@ const users: DemoUser[] = [
     name: "Administrador",
     email: "admin@kes.local",
     passwordHash: hashSync("admin123", 10),
-    role: UserRole.ADMIN,
+    role: MembershipRole.OWNER,
     active: true,
     color: "#0f172a",
     timezone: "America/Sao_Paulo",
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: "user-member",
@@ -105,10 +110,12 @@ const users: DemoUser[] = [
     name: "Consultor Agenda",
     email: "consultor@kes.local",
     passwordHash: hashSync("user12345", 10),
-    role: UserRole.MEMBER,
+    role: MembershipRole.MEMBER,
     active: true,
     color: "#2563eb",
     timezone: "America/Sao_Paulo",
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 ];
 
@@ -170,7 +177,7 @@ function nextId(prefix: string) {
 }
 
 function getAccessibleSchedules(auth: AuthContext) {
-  return auth.role === UserRole.ADMIN
+  return isWorkspaceAdmin(auth.role)
     ? schedules.filter((item) => item.companyId === auth.companyId)
     : schedules.filter((item) => item.companyId === auth.companyId && item.assignmentUserIds.includes(auth.userId));
 }
@@ -186,7 +193,6 @@ function toScheduleResponse(schedule: DemoSchedule) {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
         color: user.color,
       },
     };
@@ -198,7 +204,6 @@ function toScheduleResponse(schedule: DemoSchedule) {
       id: owner.id,
       name: owner.name,
       email: owner.email,
-      role: owner.role,
     },
     assignments,
     _count: {
@@ -245,9 +250,10 @@ export const demoStore = {
   listUsers(auth: AuthContext) {
     return users
       .filter((user) => user.companyId === auth.companyId && user.active)
-      .filter((user) => auth.role === UserRole.ADMIN || user.id === auth.userId)
+      .filter((user) => isWorkspaceAdmin(auth.role) || user.id === auth.userId)
       .map((user) => ({
         id: user.id,
+        membershipId: `demo-membership-${user.id}`,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -278,7 +284,7 @@ export const demoStore = {
     assignedUserIds: string[];
     workingHours: DemoWorkingHour[];
   }) {
-    const ownerId = auth.role === UserRole.ADMIN ? payload.ownerId ?? auth.userId : auth.userId;
+    const ownerId = isWorkspaceAdmin(auth.role) ? payload.ownerId ?? auth.userId : auth.userId;
     const schedule: DemoSchedule = {
       id: nextId("schedule"),
       companyId: auth.companyId,
@@ -312,10 +318,10 @@ export const demoStore = {
     schedule.active = payload.active ?? schedule.active;
     schedule.color = payload.color ?? schedule.color;
     schedule.timezone = payload.timezone ?? schedule.timezone;
-    if (payload.assignedUserIds && auth.role === UserRole.ADMIN) {
+    if (payload.assignedUserIds && isWorkspaceAdmin(auth.role)) {
       schedule.assignmentUserIds = Array.from(new Set([payload.ownerId ?? schedule.ownerId, ...payload.assignedUserIds]));
     }
-    schedule.ownerId = auth.role === UserRole.ADMIN ? payload.ownerId ?? schedule.ownerId : schedule.ownerId;
+    schedule.ownerId = isWorkspaceAdmin(auth.role) ? payload.ownerId ?? schedule.ownerId : schedule.ownerId;
     if (payload.workingHours) {
       schedule.workingHours = payload.workingHours.map((item) => ({ ...item, id: item.id || nextId("wh") }));
     }

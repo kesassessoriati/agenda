@@ -5,7 +5,9 @@ import { appointmentController } from "../../../modules/appointments/interface/c
 import { authController } from "../../../modules/auth/interface/controllers/auth.controller.js";
 import { googleCalendarController } from "../../../modules/google-calendar/interface/controllers/google-calendar.controller.js";
 import { scheduleController } from "../../../modules/schedules/interface/controllers/schedule.controller.js";
+import { teamController } from "../../../modules/team/interface/controllers/team.controller.js";
 import { userController } from "../../../modules/users/interface/controllers/user.controller.js";
+import { workspaceController } from "../../../modules/workspaces/interface/controllers/workspace.controller.js";
 import { authMiddleware } from "../middlewares/auth-middleware.js";
 
 export function registerRoutes(app: Express) {
@@ -14,11 +16,20 @@ export function registerRoutes(app: Express) {
 
   publicRouter.get("/health", (_request, response) => response.json({ status: "ok" }));
   publicRouter.post("/auth/login", authController.login);
+  publicRouter.post("/workspaces/register", workspaceController.register);
+  publicRouter.get("/workspace-invitations/:token", teamController.getInvitationPreview);
+  publicRouter.post("/workspace-invitations/:token/accept", teamController.acceptInvitation);
   publicRouter.get("/google-calendar/callback", googleCalendarController.callback);
 
   privateRouter.use(authMiddleware);
   privateRouter.get("/auth/me", authController.me);
+  privateRouter.post("/auth/switch-workspace", authController.switchWorkspace);
   privateRouter.get("/users", userController.listAssignable);
+  privateRouter.get("/team/members", teamController.listMembers);
+  privateRouter.patch("/team/members/:membershipId", teamController.updateMember);
+  privateRouter.get("/team/invitations", teamController.listInvitations);
+  privateRouter.post("/team/invitations", teamController.createInvitation);
+  privateRouter.delete("/team/invitations/:invitationId", teamController.revokeInvitation);
 
   privateRouter.get("/schedules", scheduleController.list);
   privateRouter.get("/schedules/:scheduleId", scheduleController.get);

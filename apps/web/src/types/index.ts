@@ -1,20 +1,34 @@
-export type UserRole = "ADMIN" | "MEMBER";
+export type WorkspaceRole = "OWNER" | "ADMIN" | "MEMBER";
+export type InvitationStatus = "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
 export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
 export interface CompanySummary {
   id: string;
   name: string;
   slug: string;
+  timezone: string;
+}
+
+export interface WorkspaceMembershipSummary {
+  id: string;
+  companyId: string;
+  role: WorkspaceRole;
+  joinedAt: string;
+  lastAccessedAt?: string | null;
+  company: CompanySummary;
 }
 
 export interface AuthUser {
   id: string;
+  membershipId: string;
   companyId: string;
   name: string;
   email: string;
-  role: UserRole;
+  color?: string | null;
+  role: WorkspaceRole;
   timezone: string;
   company: CompanySummary;
+  memberships: WorkspaceMembershipSummary[];
 }
 
 export interface WorkingHour {
@@ -34,7 +48,6 @@ export interface ScheduleAssignment {
     id: string;
     name: string;
     email: string;
-    role: UserRole;
     color?: string | null;
   };
 }
@@ -61,7 +74,6 @@ export interface Schedule {
     id: string;
     name: string;
     email: string;
-    role: UserRole;
   };
   assignments: ScheduleAssignment[];
   workingHours: WorkingHour[];
@@ -123,9 +135,62 @@ export interface AppointmentSummary {
 
 export interface UserOption {
   id: string;
+  membershipId: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: WorkspaceRole;
   color?: string | null;
   timezone: string;
+}
+
+export interface TeamMember {
+  id: string;
+  companyId: string;
+  role: WorkspaceRole;
+  active: boolean;
+  joinedAt: string;
+  lastAccessedAt?: string | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    color?: string | null;
+    timezone: string;
+    active: boolean;
+  };
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: WorkspaceRole;
+  status: InvitationStatus;
+  expiresAt: string;
+  acceptedAt?: string | null;
+  revokedAt?: string | null;
+  createdAt: string;
+  invitedBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  acceptedByUser?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+}
+
+export interface InvitationPreview {
+  company: CompanySummary;
+  email: string;
+  role: WorkspaceRole;
+  status: InvitationStatus;
+  expiresAt: string;
+  inviter: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  existingUser: boolean;
 }

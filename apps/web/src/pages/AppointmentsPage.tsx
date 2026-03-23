@@ -48,6 +48,7 @@ import {
   updateAppointment,
 } from "../services/appointments";
 import { fetchSchedules } from "../services/schedules";
+import { useAuthStore } from "../store/auth-store";
 import { useUiStore } from "../store/ui-store";
 import type { Appointment, AppointmentStatus } from "../types";
 import { getErrorMessage } from "../utils/error";
@@ -58,6 +59,7 @@ type ViewMode = "list" | "calendar";
 export function AppointmentsPage() {
   const queryClient = useQueryClient();
   const showToast = useUiStore((state) => state.showToast);
+  const user = useAuthStore((state) => state.user);
   const [searchParams] = useSearchParams();
 
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -85,18 +87,21 @@ export function AppointmentsPage() {
   );
 
   const schedulesQuery = useQuery({
-    queryKey: ["schedules"],
+    queryKey: ["schedules", user?.companyId],
     queryFn: () => fetchSchedules({ active: true }),
+    enabled: Boolean(user?.companyId),
   });
 
   const appointmentsQuery = useQuery({
-    queryKey: ["appointments", filters],
+    queryKey: ["appointments", user?.companyId, filters],
     queryFn: () => fetchAppointments(filters),
+    enabled: Boolean(user?.companyId),
   });
 
   const summaryQuery = useQuery({
-    queryKey: ["appointments-summary", filters],
+    queryKey: ["appointments-summary", user?.companyId, filters],
     queryFn: () => fetchAppointmentSummary(filters),
+    enabled: Boolean(user?.companyId),
   });
 
   const mutation = useMutation({
@@ -109,8 +114,8 @@ export function AppointmentsPage() {
     },
     onSuccess: () => {
       showToast(selectedAppointment ? "Compromisso atualizado." : "Compromisso criado.", "success");
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["appointments-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments", user?.companyId] });
+      queryClient.invalidateQueries({ queryKey: ["appointments-summary", user?.companyId] });
       setDialogOpen(false);
       setSelectedAppointment(null);
       setPrefillStartAt(undefined);
@@ -122,8 +127,8 @@ export function AppointmentsPage() {
     mutationFn: ({ id, status: nextStatus }: { id: string; status: AppointmentStatus }) => updateAppointment(id, { status: nextStatus }),
     onSuccess: () => {
       showToast("Status atualizado.", "success");
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["appointments-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments", user?.companyId] });
+      queryClient.invalidateQueries({ queryKey: ["appointments-summary", user?.companyId] });
     },
     onError: (error) => showToast(getErrorMessage(error), "error"),
   });
@@ -132,8 +137,8 @@ export function AppointmentsPage() {
     mutationFn: deleteAppointment,
     onSuccess: () => {
       showToast("Compromisso excluído.", "success");
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["appointments-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments", user?.companyId] });
+      queryClient.invalidateQueries({ queryKey: ["appointments-summary", user?.companyId] });
       setDeleteTarget(null);
     },
     onError: (error) => showToast(getErrorMessage(error), "error"),
@@ -143,9 +148,9 @@ export function AppointmentsPage() {
     mutationFn: () => syncGoogleAppointments(scheduleId || undefined),
     onSuccess: (data) => {
       showToast(`Sincronização concluída: ${data.imported} importados, ${data.updated} atualizados.`, "success");
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["appointments-summary"] });
-      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments", user?.companyId] });
+      queryClient.invalidateQueries({ queryKey: ["appointments-summary", user?.companyId] });
+      queryClient.invalidateQueries({ queryKey: ["schedules", user?.companyId] });
     },
     onError: (error) => showToast(getErrorMessage(error), "error"),
   });

@@ -1,5 +1,6 @@
-import { AppointmentStatus, UserRole, type Prisma } from "@prisma/client";
+import { AppointmentStatus, type Prisma } from "@prisma/client";
 
+import { isWorkspaceAdmin, type AuthContext } from "../../../../shared/auth/context.js";
 import { env } from "../../../../shared/config/env.js";
 import { AppError } from "../../../../shared/errors/app-error.js";
 import { demoStore } from "../../../../shared/lib/demo-store.js";
@@ -12,12 +13,6 @@ import {
 } from "../../../google-calendar/application/services/google-calendar.service.js";
 import { createAppointmentSchema, listAppointmentsQuerySchema, updateAppointmentSchema } from "../dto/appointment.schemas.js";
 import { assertScheduleAvailability, buildAppointmentWhere, buildAppointmentWindow } from "./availability.service.js";
-
-type AuthContext = {
-  companyId: string;
-  userId: string;
-  role: UserRole;
-};
 
 const appointmentInclude = {
   schedule: {
@@ -68,7 +63,7 @@ const appointmentInclude = {
 } satisfies Prisma.AppointmentInclude;
 
 async function getAccessibleScheduleIds(auth: AuthContext) {
-  if (auth.role === "ADMIN") {
+  if (isWorkspaceAdmin(auth.role)) {
     return undefined;
   }
 

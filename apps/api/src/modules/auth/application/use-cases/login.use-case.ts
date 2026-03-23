@@ -1,7 +1,8 @@
 import { compare } from "bcryptjs";
-import jwt, { type SignOptions } from "jsonwebtoken";
+import { MembershipRole } from "@prisma/client";
 import { z } from "zod";
 
+import { buildAuthSession, getSessionUser, resolvePreferredMembership, signAuthToken } from "../../../../shared/auth/session.js";
 import { env } from "../../../../shared/config/env.js";
 import { AppError } from "../../../../shared/errors/app-error.js";
 import { demoStore } from "../../../../shared/lib/demo-store.js";
@@ -10,6 +11,7 @@ import { prisma } from "../../../../shared/lib/prisma.js";
 const loginSchema = z.object({
   email: z.email("Informe um e-mail válido."),
   password: z.string().min(6, "A senha precisa ter ao menos 6 caracteres."),
+  workspaceSlug: z.string().optional(),
 });
 
 export async function loginUseCase(input: unknown) {
@@ -19,55 +21,65 @@ export async function loginUseCase(input: unknown) {
     const user = demoStore.findUserByEmail(payload.email);
 
     if (!user) {
-      throw new AppError("Credenciais invÃ¡lidas.", 401);
+      throw new AppError("Credenciais inválidas.", 401);
     }
 
     const passwordMatches = await compare(payload.password, user.passwordHash);
     if (!passwordMatches) {
-      throw new AppError("Credenciais invÃ¡lidas.", 401);
+      throw new AppError("Credenciais inválidas.", 401);
     }
 
-    const token = jwt.sign(
-      {
-        companyId: user.companyId,
-        role: user.role,
-      },
-      env.JWT_SECRET,
-      {
-        subject: user.id,
-        expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"],
-      },
-    );
+    const membershipId = user.role === MembershipRole.OWNER ? "demo-membership-owner" : "demo-membership-member";
+    const token = signAuthToken({
+      userId: user.id,
+      membershipId,
+      companyId: user.companyId,
+      role: user.role,
+    });
 
     return {
       token,
       user: {
         id: user.id,
+        membershipId,
         companyId: user.companyId,
         name: user.name,
         email: user.email,
+        color: user.color ?? null,
         role: user.role,
         timezone: user.timezone,
         company: {
           id: demoStore.company.id,
           name: demoStore.company.name,
           slug: demoStore.company.slug,
+          timezone: demoStore.company.timezone,
         },
+        memberships: [
+          {
+            id: membershipId,
+            companyId: demoStore.company.id,
+            role: user.role,
+            joinedAt: user.createdAt,
+            lastAccessedAt: user.updatedAt,
+            company: {
+              id: demoStore.company.id,
+              name: demoStore.company.name,
+              slug: demoStore.company.slug,
+              timezone: demoStore.company.timezone,
+            },
+          },
+        ],
       },
     };
   }
 
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: {
       email: payload.email,
-      active: true,
-    },
-    include: {
-      company: true,
     },
   });
 
-  if (!user) {
+  if (!user || !user.active) {
     throw new AppError("Credenciais inválidas.", 401);
   }
 
@@ -76,85 +88,52 @@ export async function loginUseCase(input: unknown) {
     throw new AppError("Credenciais inválidas.", 401);
   }
 
-  const token = jwt.sign(
-    {
-      companyId: user.companyId,
-      role: user.role,
-    },
-    env.JWT_SECRET,
-    {
-      subject: user.id,
-      expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"],
-    },
-  );
-
-  return {
-    token,
-    user: {
-      id: user.id,
-      companyId: user.companyId,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      timezone: user.timezone,
-      company: {
-        id: user.company.id,
-        name: user.company.name,
-        slug: user.company.slug,
-      },
-    },
-  };
+  const membership = await resolvePreferredMembership(user.id, payload.workspaceSlug);
+  return buildAuthSession(user.id, membership.id);
 }
 
-export async function meUseCase(auth: { userId: string; companyId: string }) {
+export async function meUseCase(auth: { userId: string; membershipId: string }) {
   if (env.DEMO_MODE) {
     const user = demoStore.findUserById(auth.userId);
 
     if (!user) {
-      throw new AppError("UsuÃ¡rio nÃ£o encontrado.", 404);
+      throw new AppError("Usuário não encontrado.", 404);
     }
+
+    const membershipId = user.role === MembershipRole.OWNER ? "demo-membership-owner" : "demo-membership-member";
 
     return {
       id: user.id,
+      membershipId,
       companyId: user.companyId,
       name: user.name,
       email: user.email,
+      color: user.color ?? null,
       role: user.role,
       timezone: user.timezone,
       company: {
         id: demoStore.company.id,
         name: demoStore.company.name,
         slug: demoStore.company.slug,
+        timezone: demoStore.company.timezone,
       },
+      memberships: [
+        {
+          id: membershipId,
+          companyId: demoStore.company.id,
+          role: user.role,
+          joinedAt: user.createdAt,
+          lastAccessedAt: user.updatedAt,
+          company: {
+            id: demoStore.company.id,
+            name: demoStore.company.name,
+            slug: demoStore.company.slug,
+            timezone: demoStore.company.timezone,
+          },
+        },
+      ],
     };
   }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      id: auth.userId,
-      companyId: auth.companyId,
-      active: true,
-    },
-    include: {
-      company: true,
-    },
-  });
-
-  if (!user) {
-    throw new AppError("Usuário não encontrado.", 404);
-  }
-
-  return {
-    id: user.id,
-    companyId: user.companyId,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    timezone: user.timezone,
-    company: {
-      id: user.company.id,
-      name: user.company.name,
-      slug: user.company.slug,
-    },
-  };
+  return getSessionUser(auth.userId, auth.membershipId);
 }

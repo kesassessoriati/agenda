@@ -7,7 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
+enum MembershipRole {
+  OWNER
   ADMIN
   MEMBER
 }
@@ -31,7 +32,8 @@ model Company {
   name          String
   slug          String                      @unique
   timezone      String                      @default("America/Sao_Paulo")
-  users         User[]
+  memberships   Membership[]
+  invitations   CompanyInvitation[]
   schedules     Schedule[]
   appointments  Appointment[]
   integrations  GoogleCalendarIntegration[]
@@ -43,25 +45,65 @@ model Company {
 }
 
 model User {
-  id                  String         @id @default(cuid())
-  companyId           String
+  id                  String              @id @default(cuid())
   name                String
-  email               String         @unique
+  email               String              @unique
   passwordHash        String
-  role                UserRole       @default(MEMBER)
-  active              Boolean        @default(true)
+  active              Boolean             @default(true)
   color               String?
-  timezone            String         @default("America/Sao_Paulo")
-  company             Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  ownedSchedules      Schedule[]     @relation("ScheduleOwner")
+  timezone            String              @default("America/Sao_Paulo")
+  memberships         Membership[]
+  invitedMemberships  Membership[]        @relation("MembershipInvitedBy")
+  sentInvitations     CompanyInvitation[] @relation("InvitationInvitedBy")
+  acceptedInvitations CompanyInvitation[] @relation("InvitationAcceptedBy")
+  ownedSchedules      Schedule[]          @relation("ScheduleOwner")
   scheduleMemberships ScheduleUser[]
-  createdAppointments Appointment[]  @relation("AppointmentCreatedBy")
-  updatedAppointments Appointment[]  @relation("AppointmentUpdatedBy")
+  createdAppointments Appointment[]       @relation("AppointmentCreatedBy")
+  updatedAppointments Appointment[]       @relation("AppointmentUpdatedBy")
   auditLogs           AuditLog[]
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
 
-  @@index([companyId, role])
+model Membership {
+  id             String         @id @default(cuid())
+  companyId      String
+  userId         String
+  role           MembershipRole @default(MEMBER)
+  active         Boolean        @default(true)
+  invitedById    String?
+  joinedAt       DateTime       @default(now())
+  lastAccessedAt DateTime?
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy      User?          @relation("MembershipInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([companyId, userId])
+  @@index([userId, active])
+  @@index([companyId, role, active])
+}
+
+model CompanyInvitation {
+  id               String         @id @default(cuid())
+  companyId        String
+  email            String
+  role             MembershipRole @default(MEMBER)
+  tokenHash        String         @unique
+  invitedById      String
+  acceptedByUserId String?
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invitedBy        User           @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  acceptedByUser   User?          @relation("InvitationAcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([companyId, email, expiresAt])
+  @@index([companyId, revokedAt, acceptedAt])
 }
 
 model Schedule {

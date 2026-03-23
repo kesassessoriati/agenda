@@ -1,10 +1,11 @@
 import EventAvailableRounded from "@mui/icons-material/EventAvailableRounded";
-import { Box, Button, Container, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, ButtonGroup, Container, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { login } from "../services/auth";
+import { login, registerWorkspace } from "../services/auth";
 import { useAuthStore } from "../store/auth-store";
 import { useUiStore } from "../store/ui-store";
 import { getErrorMessage } from "../utils/error";
@@ -14,18 +15,40 @@ type LoginValues = {
   password: string;
 };
 
+type RegisterValues = {
+  companyName: string;
+  companySlug: string;
+  ownerName: string;
+  email: string;
+  password: string;
+  timezone: string;
+};
+
 export function LoginPage() {
   const navigate = useNavigate();
   const setSession = useAuthStore((state) => state.setSession);
   const showToast = useUiStore((state) => state.showToast);
-  const { control, handleSubmit } = useForm<LoginValues>({
+  const [mode, setMode] = useState<"login" | "register">("login");
+
+  const loginForm = useForm<LoginValues>({
     defaultValues: {
       email: "",
       password: "",
     },
   });
 
-  const mutation = useMutation({
+  const registerForm = useForm<RegisterValues>({
+    defaultValues: {
+      companyName: "",
+      companySlug: "",
+      ownerName: "",
+      email: "",
+      password: "",
+      timezone: "America/Sao_Paulo",
+    },
+  });
+
+  const authMutation = useMutation({
     mutationFn: login,
     onSuccess: (data) => {
       setSession(data.token, data.user);
@@ -36,6 +59,27 @@ export function LoginPage() {
       showToast(getErrorMessage(error), "error");
     },
   });
+
+  const registerMutation = useMutation({
+    mutationFn: registerWorkspace,
+    onSuccess: (data) => {
+      setSession(data.token, data.user);
+      showToast("Workspace criado com sucesso.", "success");
+      navigate("/compromissos");
+    },
+    onError: (error) => {
+      showToast(getErrorMessage(error), "error");
+    },
+  });
+
+  const benefits = useMemo(
+    () => [
+      "Cada empresa opera em um workspace isolado com sessão tenant-scoped.",
+      "Owners e admins gerenciam equipe, convites e acesso às agendas com validação no backend.",
+      "Convites por e-mail funcionam com link seguro e aceite no workspace correto.",
+    ],
+    [],
+  );
 
   return (
     <Box sx={{ minHeight: "100vh", background: "linear-gradient(135deg, #062925 0%, #0f766e 45%, #1d4ed8 100%)", py: { xs: 4, md: 8 } }}>
@@ -61,21 +105,16 @@ export function LoginPage() {
                   <Typography variant="overline" sx={{ color: "#99f6e4", fontWeight: 800 }}>
                     Plataforma KES
                   </Typography>
-                  <Typography variant="h3">Agenda operacional com visão de calendário, fila e integração Google.</Typography>
+                  <Typography variant="h3">Agenda operacional agora pronta para múltiplos workspaces.</Typography>
                 </Box>
               </Stack>
 
               <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.82)", maxWidth: 560 }}>
-                O novo sistema replica os blocos funcionais do módulo legado: agendas, compromissos, dashboard, filtros por contexto,
-                controle de conflito, permissões e sincronização manual com calendário externo.
+                O fluxo foi evoluído para tenancy real: autenticação tenant-scoped, memberships por workspace, convites por e-mail e administração segura da equipe.
               </Typography>
 
               <Stack spacing={1.5}>
-                {[
-                  "Agendas com responsáveis, horário operacional e ativação/inativação.",
-                  "Compromissos em lista e calendário com indicadores e ações rápidas.",
-                  "Integração opcional com Google Calendar e propagação de atualizações.",
-                ].map((item) => (
+                {benefits.map((item) => (
                   <Paper key={item} elevation={0} sx={{ p: 2, borderRadius: 0, background: "rgba(255,255,255,0.10)", color: "#ecfeff" }}>
                     {item}
                   </Paper>
@@ -87,16 +126,60 @@ export function LoginPage() {
           <Paper elevation={0} sx={{ p: { xs: 4, md: 5 }, borderRadius: 0 }}>
             <Stack spacing={3}>
               <Box>
-                <Typography variant="h4">Entrar</Typography>
+                <Typography variant="h4">{mode === "login" ? "Entrar" : "Criar workspace"}</Typography>
               </Box>
 
-              <Controller name="email" control={control} render={({ field }) => <TextField {...field} label="E-mail" fullWidth />} />
-              <Controller name="password" control={control} render={({ field }) => <TextField {...field} type="password" label="Senha" fullWidth />} />
+              <ButtonGroup fullWidth>
+                <Button variant={mode === "login" ? "contained" : "outlined"} onClick={() => setMode("login")}>
+                  Entrar
+                </Button>
+                <Button variant={mode === "register" ? "contained" : "outlined"} onClick={() => setMode("register")}>
+                  Criar empresa
+                </Button>
+              </ButtonGroup>
 
-              <Button onClick={handleSubmit((values) => mutation.mutate(values))} variant="contained" size="large" disabled={mutation.isPending}>
-                {mutation.isPending ? "Entrando..." : "Acessar sistema"}
-              </Button>
+              {mode === "login" ? (
+                <>
+                  <Controller name="email" control={loginForm.control} render={({ field }) => <TextField {...field} label="E-mail" fullWidth />} />
+                  <Controller name="password" control={loginForm.control} render={({ field }) => <TextField {...field} type="password" label="Senha" fullWidth />} />
 
+                  <Button
+                    onClick={loginForm.handleSubmit((values) => authMutation.mutate(values))}
+                    variant="contained"
+                    size="large"
+                    disabled={authMutation.isPending}
+                  >
+                    {authMutation.isPending ? "Entrando..." : "Acessar sistema"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Controller name="companyName" control={registerForm.control} render={({ field }) => <TextField {...field} label="Nome da empresa" fullWidth />} />
+                  <Controller
+                    name="companySlug"
+                    control={registerForm.control}
+                    render={({ field }) => <TextField {...field} label="Slug do workspace (opcional)" fullWidth helperText="Se vazio, será gerado automaticamente." />}
+                  />
+                  <Controller name="ownerName" control={registerForm.control} render={({ field }) => <TextField {...field} label="Nome do responsável" fullWidth />} />
+                  <Controller name="email" control={registerForm.control} render={({ field }) => <TextField {...field} label="E-mail" fullWidth />} />
+                  <Controller name="password" control={registerForm.control} render={({ field }) => <TextField {...field} type="password" label="Senha" fullWidth />} />
+                  <Controller name="timezone" control={registerForm.control} render={({ field }) => <TextField {...field} label="Timezone" fullWidth />} />
+
+                  <Button
+                    onClick={registerForm.handleSubmit((values) =>
+                      registerMutation.mutate({
+                        ...values,
+                        companySlug: values.companySlug || undefined,
+                      })
+                    )}
+                    variant="contained"
+                    size="large"
+                    disabled={registerMutation.isPending}
+                  >
+                    {registerMutation.isPending ? "Criando..." : "Criar workspace"}
+                  </Button>
+                </>
+              )}
             </Stack>
           </Paper>
         </Box>

@@ -1,16 +1,11 @@
 import { google } from "googleapis";
 import jwt from "jsonwebtoken";
 
+import { isWorkspaceAdmin, type AuthContext } from "../../../../shared/auth/context.js";
 import { env, googleCalendarEnabled } from "../../../../shared/config/env.js";
 import { AppError } from "../../../../shared/errors/app-error.js";
 import { logger } from "../../../../shared/lib/logger.js";
 import { prisma } from "../../../../shared/lib/prisma.js";
-
-type AuthContext = {
-  userId: string;
-  companyId: string;
-  role: "ADMIN" | "MEMBER";
-};
 
 type StatePayload = {
   scheduleId: string;
@@ -44,7 +39,7 @@ async function ensureScheduleAccess(auth: AuthContext, scheduleId: string) {
     where: {
       id: scheduleId,
       companyId: auth.companyId,
-      ...(auth.role === "ADMIN"
+      ...(isWorkspaceAdmin(auth.role)
         ? {}
         : {
             assignments: {

@@ -3,14 +3,16 @@ import jwt from "jsonwebtoken";
 
 import { env } from "../../config/env.js";
 import { AppError } from "../../errors/app-error.js";
+import { getMembershipByIdForUser } from "../../auth/session.js";
 
 type JwtPayload = {
   sub: string;
+  membershipId: string;
   companyId: string;
-  role: "ADMIN" | "MEMBER";
+  role: "OWNER" | "ADMIN" | "MEMBER";
 };
 
-export function authMiddleware(request: Request, _response: Response, next: NextFunction) {
+export async function authMiddleware(request: Request, _response: Response, next: NextFunction) {
   const header = request.headers.authorization;
 
   if (!header) {
@@ -25,10 +27,34 @@ export function authMiddleware(request: Request, _response: Response, next: Next
 
   const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 
+  if (env.DEMO_MODE) {
+    request.auth = {
+      userId: payload.sub,
+      membershipId: payload.membershipId ?? "demo-membership-owner",
+      companyId: payload.companyId,
+      role: payload.role,
+      company: {
+        id: payload.companyId,
+        name: "KES Demo",
+        slug: "kes-demo",
+        timezone: "America/Sao_Paulo",
+      },
+    };
+
+    return next();
+  }
+
+  const membership = await getMembershipByIdForUser(payload.sub, payload.membershipId);
+  if (!membership) {
+    throw new AppError("Sessão expirada ou workspace inválido.", 401);
+  }
+
   request.auth = {
-    userId: payload.sub,
-    companyId: payload.companyId,
-    role: payload.role,
+    userId: membership.userId,
+    membershipId: membership.id,
+    companyId: membership.companyId,
+    role: membership.role,
+    company: membership.company,
   };
 
   return next();
