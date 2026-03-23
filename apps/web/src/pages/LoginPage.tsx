@@ -45,7 +45,7 @@ export function LoginPage() {
             elevation={0}
             sx={{
               p: { xs: 4, md: 6 },
-              borderRadius: 8,
+              borderRadius: 0,
               background: "rgba(255,255,255,0.10)",
               color: "#fff",
               backdropFilter: "blur(20px)",
@@ -54,7 +54,7 @@ export function LoginPage() {
           >
             <Stack spacing={3}>
               <Stack direction="row" spacing={2} alignItems="center">
-                <Box sx={{ width: 60, height: 60, borderRadius: 4, display: "grid", placeItems: "center", background: "rgba(255,255,255,0.12)" }}>
+                <Box sx={{ width: 60, height: 60, borderRadius: 0, display: "grid", placeItems: "center", background: "rgba(255,255,255,0.12)" }}>
                   <EventAvailableRounded sx={{ fontSize: 34 }} />
                 </Box>
                 <Box>
@@ -76,7 +76,7 @@ export function LoginPage() {
                   "Compromissos em lista e calendário com indicadores e ações rápidas.",
                   "Integração opcional com Google Calendar e propagação de atualizações.",
                 ].map((item) => (
-                  <Paper key={item} elevation={0} sx={{ p: 2, borderRadius: 4, background: "rgba(255,255,255,0.10)", color: "#ecfeff" }}>
+                  <Paper key={item} elevation={0} sx={{ p: 2, borderRadius: 0, background: "rgba(255,255,255,0.10)", color: "#ecfeff" }}>
                     {item}
                   </Paper>
                 ))}
@@ -84,7 +84,7 @@ export function LoginPage() {
             </Stack>
           </Paper>
 
-          <Paper elevation={0} sx={{ p: { xs: 4, md: 5 }, borderRadius: 8 }}>
+          <Paper elevation={0} sx={{ p: { xs: 4, md: 5 }, borderRadius: 0 }}>
             <Stack spacing={3}>
               <Box>
                 <Typography variant="h4">Entrar</Typography>

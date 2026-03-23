@@ -161,7 +161,7 @@ export function ScheduleDialog({ open, schedule, users, isAdmin, submitting, onC
           )}
 
           <Grid size={{ xs: 12 }}>
-            <Box sx={{ p: 2.5, borderRadius: 4, background: "rgba(15, 23, 42, 0.03)" }}>
+            <Box sx={{ p: 2.5, borderRadius: 0, background: "rgba(15, 23, 42, 0.03)" }}>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Jornada da agenda
               </Typography>

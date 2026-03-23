@@ -44,7 +44,7 @@ export function AppShell() {
               sx={{
                 width: 42,
                 height: 42,
-                borderRadius: 14,
+                borderRadius: 0,
                 display: "grid",
                 placeItems: "center",
                 color: "#fff",
@@ -64,7 +64,7 @@ export function AppShell() {
             </Box>
           </Box>
 
-          <Stack direction="row" spacing={1} sx={{ background: "rgba(15,23,42,0.04)", p: 0.5, borderRadius: 18 }}>
+          <Stack direction="row" spacing={1} sx={{ background: "rgba(15,23,42,0.04)", p: 0.5, borderRadius: 0 }}>
             <NavLink to="/compromissos" style={navLinkStyles}>
               Compromissos
             </NavLink>

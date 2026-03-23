@@ -179,7 +179,7 @@ export function AppointmentsPage() {
         elevation={0}
         sx={{
           p: { xs: 3, md: 4 },
-          borderRadius: 8,
+          borderRadius: 0,
           background: "linear-gradient(135deg, #0f172a 0%, #1e293b 38%, #1d4ed8 100%)",
           color: "#fff",
         }}
@@ -220,7 +220,7 @@ export function AppointmentsPage() {
           { label: "Agendas com Google", value: summary?.linkedSchedulesCount ?? 0 },
         ].map((item) => (
           <Grid size={{ xs: 12, md: 3 }} key={item.label}>
-            <Paper elevation={0} sx={{ p: 3, borderRadius: 6 }}>
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 0 }}>
               <Typography color="text.secondary">{item.label}</Typography>
               <Typography variant="h3">{item.value}</Typography>
             </Paper>
@@ -228,7 +228,7 @@ export function AppointmentsPage() {
         ))}
       </Grid>
 
-      <Paper elevation={0} sx={{ p: 3, borderRadius: 6 }}>
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 0 }}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, md: 3 }}>
             <TextField label="Buscar" value={search} onChange={(event) => setSearch(event.target.value)} fullWidth />
@@ -268,7 +268,7 @@ export function AppointmentsPage() {
       </Paper>
 
       {summary?.nextAppointment ? (
-        <Paper elevation={0} sx={{ p: 3, borderRadius: 6, background: "linear-gradient(135deg, rgba(15,118,110,0.08), rgba(29,78,216,0.08))" }}>
+        <Paper elevation={0} sx={{ p: 3, borderRadius: 0, background: "linear-gradient(135deg, rgba(15,118,110,0.08), rgba(29,78,216,0.08))" }}>
           <Stack spacing={0.5}>
             <Typography color="text.secondary">Próximo compromisso</Typography>
             <Typography variant="h5">{summary.nextAppointment.title}</Typography>
@@ -279,7 +279,7 @@ export function AppointmentsPage() {
         </Paper>
       ) : null}
 
-      <Paper elevation={0} sx={{ p: 3, borderRadius: 6 }}>
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 0 }}>
         <Stack direction={{ xs: "column", md: "row" }} spacing={2} justifyContent="space-between" alignItems={{ xs: "stretch", md: "center" }} mb={3}>
           <Box>
             <Typography variant="h5">{viewMode === "list" ? "Lista operacional" : "Calendário operacional"}</Typography>

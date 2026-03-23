@@ -120,7 +120,7 @@ export function SchedulesPage() {
         elevation={0}
         sx={{
           p: { xs: 3, md: 4 },
-          borderRadius: 8,
+          borderRadius: 0,
           background: "linear-gradient(135deg, #0f172a 0%, #134e4a 42%, #1d4ed8 100%)",
           color: "#fff",
         }}
@@ -160,7 +160,7 @@ export function SchedulesPage() {
           { label: "Com Google", value: summary.linked },
         ].map((item) => (
           <Grid size={{ xs: 12, md: 4 }} key={item.label}>
-            <Paper elevation={0} sx={{ p: 3, borderRadius: 6 }}>
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 0 }}>
               <Typography color="text.secondary">{item.label}</Typography>
               <Typography variant="h3">{item.value}</Typography>
             </Paper>
@@ -171,7 +171,7 @@ export function SchedulesPage() {
       <Grid container spacing={3}>
         {(schedulesQuery.data?.schedules ?? []).map((schedule) => (
           <Grid size={{ xs: 12, md: 6, xl: 4 }} key={schedule.id}>
-            <Card sx={{ borderRadius: 6, overflow: "hidden" }}>
+            <Card sx={{ borderRadius: 0, overflow: "hidden" }}>
               <Box sx={{ height: 8, background: schedule.color }} />
               <CardContent sx={{ p: 3 }}>
                 <Stack spacing={2}>

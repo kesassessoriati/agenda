@@ -40,8 +40,65 @@ export const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
+          borderRadius: 0,
           border: "1px solid rgba(15, 23, 42, 0.06)",
         },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: { borderRadius: 0 },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: { borderRadius: 0 },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: { borderRadius: 0 },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: { borderRadius: 0 },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: { borderRadius: 0 },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: { borderRadius: 0 },
+        notchedOutline: { borderRadius: 0 },
+      },
+    },
+    MuiAvatar: {
+      styleOverrides: {
+        root: { borderRadius: 0 },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: { borderRadius: 0 },
+      },
+    },
+    MuiButtonGroup: {
+      styleOverrides: {
+        root: { borderRadius: 0 },
+      },
+    },
+    MuiSelect: {
+      styleOverrides: {
+        outlined: { borderRadius: 0 },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: { borderRadius: 0 },
       },
     },
   },
