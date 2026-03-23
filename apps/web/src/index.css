@@ -1,0 +1,45 @@
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", "Segoe UI", sans-serif;
+  color: #0f172a;
+  background: #f4f7f3;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.fc .fc-toolbar.fc-header-toolbar {
+  margin-bottom: 1rem;
+}
+
+.fc .fc-button {
+  background: #0f766e;
+  border-color: #0f766e;
+  box-shadow: none;
+  text-transform: none;
+  font-weight: 700;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background: #134e4a;
+  border-color: #134e4a;
+}
+
+.fc .fc-daygrid-event {
+  border-radius: 10px;
+  padding: 2px 6px;
+}

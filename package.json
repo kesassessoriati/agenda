@@ -1,0 +1,24 @@
+{
+  "name": "kes-meeting-platform",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Sistema de agendas e compromissos com Google Meet",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:api": "npm run dev --workspace api",
+    "dev:web": "npm run dev --workspace web",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "prisma:generate": "npm run prisma:generate --workspace api",
+    "prisma:migrate": "npm run prisma:migrate --workspace api",
+    "prisma:seed": "npm run prisma:seed --workspace api"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
