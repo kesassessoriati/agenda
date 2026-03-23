@@ -34,20 +34,13 @@ export const theme = createTheme({
     },
   },
   shape: {
-    borderRadius: 18,
+    borderRadius: 0,
   },
   components: {
     MuiPaper: {
       styleOverrides: {
         root: {
           border: "1px solid rgba(15, 23, 42, 0.06)",
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 14,
         },
       },
     },

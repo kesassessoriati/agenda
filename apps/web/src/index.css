@@ -40,6 +40,6 @@ a {
 }
 
 .fc .fc-daygrid-event {
-  border-radius: 10px;
+  border-radius: 0;
   padding: 2px 6px;
 }

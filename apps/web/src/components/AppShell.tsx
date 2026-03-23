@@ -18,7 +18,6 @@ const navLinkStyles = ({ isActive }: { isActive: boolean }) => ({
   color: isActive ? "#0f172a" : "#475569",
   fontWeight: 800,
   padding: "10px 14px",
-  borderRadius: 14,
   background: isActive ? "rgba(255,255,255,0.8)" : "transparent",
 });
 
