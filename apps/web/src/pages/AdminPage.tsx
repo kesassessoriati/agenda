@@ -1,27 +1,37 @@
 import GroupAddRounded from "@mui/icons-material/GroupAddRounded";
 import LinkOffRounded from "@mui/icons-material/LinkOffRounded";
+import PersonAddRounded from "@mui/icons-material/PersonAddRounded";
 import ShieldRounded from "@mui/icons-material/ShieldRounded";
+import VisibilityOffRounded from "@mui/icons-material/VisibilityOffRounded";
+import VisibilityRounded from "@mui/icons-material/VisibilityRounded";
 import {
+  Alert,
   Box,
   Button,
   Chip,
+  FormControlLabel,
   Grid,
+  IconButton,
+  InputAdornment,
   MenuItem,
   Paper,
   Stack,
   Switch,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
-import { createTeamInvitation, fetchTeamInvitations, fetchTeamMembers, revokeTeamInvitation, updateTeamMember } from "../services/team";
+import { createMemberDirectly, createTeamInvitation, fetchTeamInvitations, fetchTeamMembers, revokeTeamInvitation, updateTeamMember } from "../services/team";
 import { useAuthStore } from "../store/auth-store";
 import { useUiStore } from "../store/ui-store";
 import type { WorkspaceRole } from "../types";
@@ -31,6 +41,14 @@ import { formatDateTime } from "../utils/format";
 type InviteFormValues = {
   email: string;
   role: WorkspaceRole;
+};
+
+type DirectProvisionFormValues = {
+  name: string;
+  email: string;
+  password: string;
+  role: WorkspaceRole;
+  sendEmail: boolean;
 };
 
 const roleLabels: Record<WorkspaceRole, string> = {
@@ -43,10 +61,34 @@ export function AdminPage() {
   const user = useAuthStore((state) => state.user);
   const showToast = useUiStore((state) => state.showToast);
   const queryClient = useQueryClient();
+  const [memberTab, setMemberTab] = useState<0 | 1>(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [directProvisionResult, setDirectProvisionResult] = useState<{
+    name: string;
+    email: string;
+    password: string;
+    isNewUser: boolean;
+    delivery: { configured: boolean; sent: boolean; mode: string; note: string };
+  } | null>(null);
+
   const { control, handleSubmit, reset } = useForm<InviteFormValues>({
     defaultValues: {
       email: "",
       role: user?.role === "OWNER" ? "ADMIN" : "MEMBER",
+    },
+  });
+
+  const {
+    control: directControl,
+    handleSubmit: directHandleSubmit,
+    reset: directReset,
+  } = useForm<DirectProvisionFormValues>({
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      role: user?.role === "OWNER" ? "ADMIN" : "MEMBER",
+      sendEmail: false,
     },
   });
 
@@ -90,6 +132,24 @@ export function AdminPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-invitations", user?.companyId] });
       showToast("Convite revogado.", "success");
+    },
+    onError: (error) => showToast(getErrorMessage(error), "error"),
+  });
+
+  const directProvisionMutation = useMutation({
+    mutationFn: createMemberDirectly,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["team-members", user?.companyId] });
+      setDirectProvisionResult({
+        name: variables.name,
+        email: variables.email,
+        password: variables.password,
+        isNewUser: data.isNewUser,
+        delivery: data.delivery,
+      });
+      directReset({ name: "", email: "", password: "", role: user?.role === "OWNER" ? "ADMIN" : "MEMBER", sendEmail: false });
+      const emailInfo = data.delivery.sent ? " E-mail enviado com sucesso." : "";
+      showToast(`Usuário criado e adicionado ao workspace.${emailInfo}`, "success");
     },
     onError: (error) => showToast(getErrorMessage(error), "error"),
   });
@@ -147,44 +207,155 @@ export function AdminPage() {
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 5 }}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 0 }}>
-            <Stack spacing={2.5}>
-              <Box>
-                <Typography variant="h5">Convidar membro</Typography>
-                <Typography color="text.secondary">
-                  O repositório não possui provedor de e-mail configurado. O convite é emitido com link seguro para entrega manual.
-                </Typography>
-              </Box>
+          <Paper elevation={0} sx={{ borderRadius: 0 }}>
+            <Tabs
+              value={memberTab}
+              onChange={(_, v) => { setMemberTab(v); setDirectProvisionResult(null); }}
+              sx={{ borderBottom: "1px solid rgba(15,23,42,0.1)", px: 2 }}
+            >
+              <Tab label="Convidar via link" icon={<GroupAddRounded fontSize="small" />} iconPosition="start" />
+              <Tab label="Criar diretamente" icon={<PersonAddRounded fontSize="small" />} iconPosition="start" />
+            </Tabs>
 
-              <Controller
-                name="email"
-                control={control}
-                rules={{ required: "Informe o e-mail do convidado." }}
-                render={({ field }) => <TextField {...field} label="E-mail" fullWidth />}
-              />
-              <Controller
-                name="role"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} select label="Papel no workspace" fullWidth>
-                    {availableRoles.map((role) => (
-                      <MenuItem key={role} value={role}>
-                        {roleLabels[role]}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+            {memberTab === 0 && (
+              <Stack spacing={2.5} sx={{ p: 3 }}>
+                <Box>
+                  <Typography variant="h5">Convidar membro</Typography>
+                  <Typography color="text.secondary">
+                    O convite é emitido com link seguro para entrega manual.
+                  </Typography>
+                </Box>
+
+                <Controller
+                  name="email"
+                  control={control}
+                  rules={{ required: "Informe o e-mail do convidado." }}
+                  render={({ field }) => <TextField {...field} label="E-mail" fullWidth />}
+                />
+                <Controller
+                  name="role"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField {...field} select label="Papel no workspace" fullWidth>
+                      {availableRoles.map((role) => (
+                        <MenuItem key={role} value={role}>
+                          {roleLabels[role]}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
+
+                <Button
+                  startIcon={<GroupAddRounded />}
+                  variant="contained"
+                  onClick={handleSubmit((values) => inviteMutation.mutate(values))}
+                  disabled={inviteMutation.isPending}
+                >
+                  {inviteMutation.isPending ? "Criando convite..." : "Gerar convite"}
+                </Button>
+              </Stack>
+            )}
+
+            {memberTab === 1 && (
+              <Stack spacing={2.5} sx={{ p: 3 }}>
+                <Box>
+                  <Typography variant="h5">Criar usuário diretamente</Typography>
+                  <Typography color="text.secondary">
+                    O usuário é criado e vinculado ao workspace imediatamente, podendo fazer login com as credenciais definidas.
+                  </Typography>
+                </Box>
+
+                <Controller
+                  name="name"
+                  control={directControl}
+                  rules={{ required: "Informe o nome.", minLength: { value: 2, message: "Mín. 2 caracteres." } }}
+                  render={({ field, fieldState }) => (
+                    <TextField {...field} label="Nome completo" fullWidth error={Boolean(fieldState.error)} helperText={fieldState.error?.message} />
+                  )}
+                />
+                <Controller
+                  name="email"
+                  control={directControl}
+                  rules={{ required: "Informe o e-mail.", pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "E-mail inválido." } }}
+                  render={({ field, fieldState }) => (
+                    <TextField {...field} label="E-mail" fullWidth error={Boolean(fieldState.error)} helperText={fieldState.error?.message} />
+                  )}
+                />
+                <Controller
+                  name="password"
+                  control={directControl}
+                  rules={{ required: "Informe a senha.", minLength: { value: 6, message: "Mín. 6 caracteres." } }}
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      label="Senha inicial"
+                      type={showPassword ? "text" : "password"}
+                      fullWidth
+                      error={Boolean(fieldState.error)}
+                      helperText={fieldState.error?.message ?? "Recomende ao usuário alterar após o primeiro acesso."}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton onClick={() => setShowPassword((v) => !v)} edge="end" size="small">
+                              {showPassword ? <VisibilityOffRounded fontSize="small" /> : <VisibilityRounded fontSize="small" />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="role"
+                  control={directControl}
+                  render={({ field }) => (
+                    <TextField {...field} select label="Papel no workspace" fullWidth>
+                      {availableRoles.map((role) => (
+                        <MenuItem key={role} value={role}>
+                          {roleLabels[role]}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
+                <Controller
+                  name="sendEmail"
+                  control={directControl}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={<Switch checked={field.value} onChange={(_, checked) => field.onChange(checked)} />}
+                      label="Enviar credenciais por e-mail (requer SMTP configurado)"
+                    />
+                  )}
+                />
+
+                <Button
+                  startIcon={<PersonAddRounded />}
+                  variant="contained"
+                  onClick={directHandleSubmit((values) => directProvisionMutation.mutate(values))}
+                  disabled={directProvisionMutation.isPending}
+                >
+                  {directProvisionMutation.isPending ? "Criando usuário..." : "Criar e adicionar ao workspace"}
+                </Button>
+
+                {directProvisionResult && (
+                  <Alert
+                    severity={directProvisionResult.delivery.sent ? "success" : "info"}
+                    onClose={() => setDirectProvisionResult(null)}
+                  >
+                    <Typography fontWeight={700} gutterBottom>
+                      {directProvisionResult.isNewUser ? "Novo usuário criado." : "Usuário existente adicionado ao workspace."}
+                    </Typography>
+                    <Typography variant="body2">E-mail: <strong>{directProvisionResult.email}</strong></Typography>
+                    {directProvisionResult.isNewUser && (
+                      <Typography variant="body2">Senha: <strong>{directProvisionResult.password}</strong></Typography>
+                    )}
+                    <Typography variant="body2" sx={{ mt: 1 }}>{directProvisionResult.delivery.note}</Typography>
+                  </Alert>
                 )}
-              />
-
-              <Button
-                startIcon={<GroupAddRounded />}
-                variant="contained"
-                onClick={handleSubmit((values) => inviteMutation.mutate(values))}
-                disabled={inviteMutation.isPending}
-              >
-                {inviteMutation.isPending ? "Criando convite..." : "Gerar convite"}
-              </Button>
-            </Stack>
+              </Stack>
+            )}
           </Paper>
 
           <Paper elevation={0} sx={{ p: 3, borderRadius: 0, mt: 3 }}>

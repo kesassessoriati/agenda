@@ -1,6 +1,26 @@
 import { api } from "../lib/api";
 import type { AuthUser, Invitation, InvitationPreview, TeamMember, WorkspaceRole } from "../types";
 
+export async function createMemberDirectly(payload: {
+  name: string;
+  email: string;
+  password: string;
+  role: WorkspaceRole;
+  sendEmail: boolean;
+}) {
+  const { data } = await api.post<{
+    member: TeamMember;
+    isNewUser: boolean;
+    delivery: {
+      configured: boolean;
+      sent: boolean;
+      mode: string;
+      note: string;
+    };
+  }>("/team/members", payload);
+  return data;
+}
+
 export async function fetchTeamMembers() {
   const { data } = await api.get<{ members: TeamMember[] }>("/team/members");
   return data;

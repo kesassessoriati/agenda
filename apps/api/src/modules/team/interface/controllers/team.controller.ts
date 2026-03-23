@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { AppError } from "../../../../shared/errors/app-error.js";
 import {
   acceptWorkspaceInvitation,
+  createMemberDirectly,
   createWorkspaceInvitation,
   getInvitationPreview,
   listInvitations,
@@ -36,6 +37,11 @@ export const teamController = {
   async updateMember(request: Request, response: Response) {
     const result = await updateMember(getAuth(request), getParam(request.params.membershipId, "Membro"), request.body);
     return response.json(result);
+  },
+
+  async createMember(request: Request, response: Response) {
+    const result = await createMemberDirectly(getAuth(request), request.body);
+    return response.status(201).json(result);
   },
 
   async listInvitations(request: Request, response: Response) {

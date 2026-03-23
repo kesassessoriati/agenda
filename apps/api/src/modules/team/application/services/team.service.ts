@@ -4,10 +4,11 @@ import { MembershipRole } from "@prisma/client";
 import { createInvitationToken, hashInvitationToken } from "../../../../shared/auth/invitation-token.js";
 import { buildAuthSession } from "../../../../shared/auth/session.js";
 import { canAssignMembershipRole, canManageMembership, isWorkspaceAdmin, type AuthContext } from "../../../../shared/auth/context.js";
-import { env } from "../../../../shared/config/env.js";
+import { env, smtpEnabled } from "../../../../shared/config/env.js";
 import { AppError } from "../../../../shared/errors/app-error.js";
 import { prisma } from "../../../../shared/lib/prisma.js";
-import { acceptInvitationSchema, createInvitationSchema, updateMemberSchema } from "../dto/team.schemas.js";
+import { sendAccountCreatedEmail } from "../../../../shared/lib/mail.js";
+import { acceptInvitationSchema, createInvitationSchema, createMemberDirectlySchema, updateMemberSchema } from "../dto/team.schemas.js";
 
 function getInvitationStatus(invitation: {
   acceptedAt: Date | null;
@@ -433,6 +434,163 @@ export async function getInvitationPreview(token: string) {
     expiresAt: invitation.expiresAt,
     inviter: invitation.invitedBy,
     existingUser: Boolean(existingUser?.active),
+  };
+}
+
+export async function createMemberDirectly(auth: AuthContext, input: unknown) {
+  assertWorkspaceAdminAccess(auth);
+  const payload = createMemberDirectlySchema.parse(input);
+  const email = payload.email.trim().toLowerCase();
+
+  if (!canAssignMembershipRole(auth.role, payload.role)) {
+    throw new AppError("Você não pode atribuir este papel no workspace.", 403);
+  }
+
+  const existingActiveMembership = await prisma.membership.findFirst({
+    where: {
+      companyId: auth.companyId,
+      active: true,
+      user: { email },
+    },
+    select: { id: true },
+  });
+
+  if (existingActiveMembership) {
+    throw new AppError("Este e-mail já possui acesso ativo ao workspace.", 409);
+  }
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser && !existingUser.active) {
+    throw new AppError("Este usuário está desativado na plataforma e não pode ser adicionado.", 409);
+  }
+
+  const actorUser = await prisma.user.findUnique({
+    where: { id: auth.userId },
+    select: { name: true },
+  });
+
+  const result = await prisma.$transaction(async (tx) => {
+    const user = existingUser
+      ? existingUser
+      : await tx.user.create({
+          data: {
+            name: payload.name,
+            email,
+            passwordHash: await hash(payload.password, 10),
+            timezone: "America/Sao_Paulo",
+          },
+        });
+
+    const existingMembership = await tx.membership.findUnique({
+      where: {
+        companyId_userId: {
+          companyId: auth.companyId,
+          userId: user.id,
+        },
+      },
+    });
+
+    const membership = existingMembership
+      ? await tx.membership.update({
+          where: { id: existingMembership.id },
+          data: {
+            active: true,
+            role: payload.role,
+            invitedById: auth.userId,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                color: true,
+                timezone: true,
+                active: true,
+              },
+            },
+          },
+        })
+      : await tx.membership.create({
+          data: {
+            companyId: auth.companyId,
+            userId: user.id,
+            role: payload.role,
+            active: true,
+            invitedById: auth.userId,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                color: true,
+                timezone: true,
+                active: true,
+              },
+            },
+          },
+        });
+
+    return { membership, isNewUser: !existingUser };
+  });
+
+  let emailDelivery: {
+    configured: boolean;
+    sent: boolean;
+    mode: string;
+    note: string;
+  };
+
+  if (payload.sendEmail && smtpEnabled) {
+    try {
+      await sendAccountCreatedEmail({
+        to: email,
+        name: payload.name,
+        email,
+        password: existingUser ? "(use sua senha atual)" : payload.password,
+        workspaceName: auth.company.name,
+        loginUrl: `${env.WEB_URL}/login`,
+        invitedByName: actorUser?.name ?? "Administrador",
+      });
+      emailDelivery = {
+        configured: true,
+        sent: true,
+        mode: "smtp",
+        note: "E-mail enviado com sucesso ao novo usuário.",
+      };
+    } catch {
+      emailDelivery = {
+        configured: true,
+        sent: false,
+        mode: "smtp",
+        note: "SMTP configurado, mas ocorreu um erro ao enviar o e-mail. Compartilhe os dados de acesso manualmente.",
+      };
+    }
+  } else if (payload.sendEmail && !smtpEnabled) {
+    emailDelivery = {
+      configured: false,
+      sent: false,
+      mode: "manual",
+      note: "SMTP não configurado. Compartilhe os dados de acesso manualmente com o usuário.",
+    };
+  } else {
+    emailDelivery = {
+      configured: smtpEnabled,
+      sent: false,
+      mode: "manual",
+      note: "Entrega manual selecionada. Compartilhe os dados de acesso diretamente com o usuário.",
+    };
+  }
+
+  return {
+    member: serializeMember(result.membership),
+    isNewUser: result.isNewUser,
+    delivery: emailDelivery,
   };
 }
 

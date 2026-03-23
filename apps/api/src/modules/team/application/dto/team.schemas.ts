@@ -24,3 +24,11 @@ export const acceptInvitationSchema = z.object({
   timezone: z.string().min(3).default("America/Sao_Paulo"),
   color: z.string().max(20).optional().nullable(),
 });
+
+export const createMemberDirectlySchema = z.object({
+  name: z.string().min(2, "Informe o nome do usuário (mín. 2 caracteres).").max(120),
+  email: z.email("Informe um e-mail válido."),
+  password: z.string().min(6, "A senha precisa ter ao menos 6 caracteres."),
+  role: membershipRoleEnum.default("MEMBER"),
+  sendEmail: z.boolean().default(false),
+});

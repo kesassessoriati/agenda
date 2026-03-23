@@ -17,6 +17,15 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REDIRECT_URI: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_SECURE: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);
@@ -25,3 +34,8 @@ export const googleCalendarEnabled =
   Boolean(env.GOOGLE_CLIENT_ID) &&
   Boolean(env.GOOGLE_CLIENT_SECRET) &&
   Boolean(env.GOOGLE_REDIRECT_URI);
+
+export const smtpEnabled =
+  Boolean(env.SMTP_HOST) &&
+  Boolean(env.SMTP_USER) &&
+  Boolean(env.SMTP_PASS);

@@ -32,6 +32,7 @@ export function registerRoutes(app: Express) {
   privateRouter.patch("/platform/companies/:companyId", platformCompanyController.update);
   privateRouter.delete("/platform/companies/:companyId", platformCompanyController.remove);
   privateRouter.get("/team/members", teamController.listMembers);
+  privateRouter.post("/team/members", teamController.createMember);
   privateRouter.patch("/team/members/:membershipId", teamController.updateMember);
   privateRouter.get("/team/invitations", teamController.listInvitations);
   privateRouter.post("/team/invitations", teamController.createInvitation);
