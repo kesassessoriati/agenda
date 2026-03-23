@@ -1,20 +1,26 @@
-import type { MembershipRole } from "@prisma/client";
+import type { MembershipRole, PlatformRole } from "@prisma/client";
 
 export type AuthContext = {
   userId: string;
   membershipId: string;
   companyId: string;
   role: MembershipRole;
+  platformRole: PlatformRole;
   company: {
     id: string;
     name: string;
     slug: string;
     timezone: string;
+    plan: "FREE" | "BASIC" | "PREMIUM";
   };
 };
 
 export function isWorkspaceAdmin(role: MembershipRole) {
   return role === "OWNER" || role === "ADMIN";
+}
+
+export function isSuperAdmin(platformRole: PlatformRole) {
+  return platformRole === "SUPERADMIN";
 }
 
 export function canAssignMembershipRole(actorRole: MembershipRole, nextRole: MembershipRole) {

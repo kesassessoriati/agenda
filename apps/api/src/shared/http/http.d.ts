@@ -1,4 +1,4 @@
-import type { MembershipRole } from "@prisma/client";
+import type { MembershipRole, PlatformRole } from "@prisma/client";
 
 declare global {
   namespace Express {
@@ -8,11 +8,13 @@ declare global {
         membershipId: string;
         companyId: string;
         role: MembershipRole;
+        platformRole: PlatformRole;
         company: {
           id: string;
           name: string;
           slug: string;
           timezone: string;
+          plan: "FREE" | "BASIC" | "PREMIUM";
         };
       };
     }

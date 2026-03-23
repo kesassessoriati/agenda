@@ -2,22 +2,9 @@ import { hash, compare } from "bcryptjs";
 
 import { buildAuthSession } from "../../../../shared/auth/session.js";
 import { AppError } from "../../../../shared/errors/app-error.js";
-import { slugify } from "../../../../shared/lib/slug.js";
+import { generateUniqueCompanySlug } from "../../../../shared/lib/company-slug.js";
 import { prisma } from "../../../../shared/lib/prisma.js";
 import { registerWorkspaceSchema } from "../dto/workspace.schemas.js";
-
-async function generateUniqueCompanySlug(baseValue: string) {
-  const baseSlug = slugify(baseValue);
-  let candidate = baseSlug;
-  let index = 2;
-
-  while (await prisma.company.findUnique({ where: { slug: candidate }, select: { id: true } })) {
-    candidate = `${baseSlug}-${index}`;
-    index += 1;
-  }
-
-  return candidate;
-}
 
 export async function registerWorkspace(input: unknown) {
   const payload = registerWorkspaceSchema.parse(input);
@@ -48,6 +35,7 @@ export async function registerWorkspace(input: unknown) {
         name: payload.companyName,
         slug: companySlug,
         timezone: payload.timezone,
+        plan: "FREE",
       },
     });
 

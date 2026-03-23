@@ -17,6 +17,7 @@ const GoogleCalendarCallbackPage = lazy(() =>
 const AppointmentsPage = lazy(() => import("../pages/AppointmentsPage").then((module) => ({ default: module.AppointmentsPage })));
 const SchedulesPage = lazy(() => import("../pages/SchedulesPage").then((module) => ({ default: module.SchedulesPage })));
 const AdminPage = lazy(() => import("../pages/AdminPage").then((module) => ({ default: module.AdminPage })));
+const PlatformPage = lazy(() => import("../pages/PlatformPage").then((module) => ({ default: module.PlatformPage })));
 
 function ProtectedRoute() {
   const token = useAuthStore((state) => state.token);
@@ -34,7 +35,21 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role === "MEMBER") {
+  if (user.role === "MEMBER" && user.platformRole !== "SUPERADMIN") {
+    return <Navigate to="/compromissos" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function PlatformRoute({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore((state) => state.user);
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.platformRole !== "SUPERADMIN") {
     return <Navigate to="/compromissos" replace />;
   }
 
@@ -93,6 +108,14 @@ export function AppRouter() {
                   <AdminRoute>
                     <AdminPage />
                   </AdminRoute>
+                }
+              />
+              <Route
+                path="/plataforma"
+                element={
+                  <PlatformRoute>
+                    <PlatformPage />
+                  </PlatformRoute>
                 }
               />
             </Route>

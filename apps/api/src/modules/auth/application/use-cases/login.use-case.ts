@@ -35,6 +35,7 @@ export async function loginUseCase(input: unknown) {
       membershipId,
       companyId: user.companyId,
       role: user.role,
+      platformRole: user.platformRole,
     });
 
     return {
@@ -47,12 +48,14 @@ export async function loginUseCase(input: unknown) {
         email: user.email,
         color: user.color ?? null,
         role: user.role,
+        platformRole: user.platformRole,
         timezone: user.timezone,
         company: {
           id: demoStore.company.id,
           name: demoStore.company.name,
           slug: demoStore.company.slug,
           timezone: demoStore.company.timezone,
+          plan: demoStore.company.plan,
         },
         memberships: [
           {
@@ -66,6 +69,7 @@ export async function loginUseCase(input: unknown) {
               name: demoStore.company.name,
               slug: demoStore.company.slug,
               timezone: demoStore.company.timezone,
+              plan: demoStore.company.plan,
             },
           },
         ],
@@ -110,12 +114,14 @@ export async function meUseCase(auth: { userId: string; membershipId: string }) 
       email: user.email,
       color: user.color ?? null,
       role: user.role,
+      platformRole: user.platformRole,
       timezone: user.timezone,
       company: {
         id: demoStore.company.id,
         name: demoStore.company.name,
         slug: demoStore.company.slug,
         timezone: demoStore.company.timezone,
+        plan: demoStore.company.plan,
       },
       memberships: [
         {
@@ -129,6 +135,7 @@ export async function meUseCase(auth: { userId: string; membershipId: string }) 
             name: demoStore.company.name,
             slug: demoStore.company.slug,
             timezone: demoStore.company.timezone,
+            plan: demoStore.company.plan,
           },
         },
       ],

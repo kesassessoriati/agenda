@@ -1,4 +1,4 @@
-import type { MembershipRole, Prisma } from "@prisma/client";
+import type { MembershipRole, PlatformRole, Prisma } from "@prisma/client";
 import jwt, { type SignOptions } from "jsonwebtoken";
 
 import { env } from "../config/env.js";
@@ -10,11 +10,24 @@ const companySummarySelect = {
   name: true,
   slug: true,
   timezone: true,
+  plan: true,
 } satisfies Prisma.CompanySelect;
 
 const membershipSessionInclude = {
   company: {
     select: companySummarySelect,
+  },
+} satisfies Prisma.MembershipInclude;
+
+const membershipWithUserInclude = {
+  company: {
+    select: companySummarySelect,
+  },
+  user: {
+    select: {
+      id: true,
+      platformRole: true,
+    },
   },
 } satisfies Prisma.MembershipInclude;
 
@@ -28,6 +41,7 @@ type SessionUser = {
   email: string;
   color: string | null;
   timezone: string;
+  platformRole: PlatformRole;
   membershipId: string;
   companyId: string;
   role: MembershipRole;
@@ -72,12 +86,14 @@ export function signAuthToken(input: {
   membershipId: string;
   companyId: string;
   role: MembershipRole;
+  platformRole: PlatformRole;
 }) {
   return jwt.sign(
     {
       membershipId: input.membershipId,
       companyId: input.companyId,
       role: input.role,
+      platformRole: input.platformRole,
     },
     env.JWT_SECRET,
     {
@@ -97,7 +113,7 @@ export async function getMembershipByIdForUser(userId: string, membershipId: str
         active: true,
       },
     },
-    include: membershipSessionInclude,
+    include: membershipWithUserInclude,
   });
 }
 
@@ -142,6 +158,7 @@ export async function getSessionUser(userId: string, membershipId: string): Prom
         email: true,
         color: true,
         timezone: true,
+        platformRole: true,
       },
     }),
     listActiveMemberships(userId),
@@ -162,6 +179,7 @@ export async function getSessionUser(userId: string, membershipId: string): Prom
     email: user.email,
     color: user.color,
     timezone: user.timezone,
+    platformRole: user.platformRole,
     membershipId: activeMembership.id,
     companyId: activeMembership.companyId,
     role: activeMembership.role,
@@ -180,6 +198,7 @@ export async function buildAuthSession(userId: string, membershipId: string) {
       membershipId: sessionUser.membershipId,
       companyId: sessionUser.companyId,
       role: sessionUser.role,
+      platformRole: sessionUser.platformRole,
     }),
     user: sessionUser,
   };

@@ -12,6 +12,7 @@ async function main() {
       slug: "kes-demo",
       name: "KES Demo",
       timezone: "America/Sao_Paulo",
+      plan: "FREE",
     },
   });
 
@@ -20,11 +21,14 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@kes.local" },
-    update: {},
+    update: {
+      platformRole: "SUPERADMIN",
+    },
     create: {
       name: "Administrador",
       email: "admin@kes.local",
       passwordHash: adminPassword,
+      platformRole: "SUPERADMIN",
       color: "#0f172a",
     },
   });

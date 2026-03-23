@@ -18,6 +18,7 @@ type DemoUser = {
   email: string;
   passwordHash: string;
   role: MembershipRole;
+  platformRole: "USER" | "SUPERADMIN";
   active: boolean;
   color: string | null;
   timezone: string;
@@ -88,6 +89,7 @@ const company = {
   name: "KES Demo",
   slug: "kes-demo",
   timezone: "America/Sao_Paulo",
+  plan: "FREE" as const,
 };
 
 const users: DemoUser[] = [
@@ -98,6 +100,7 @@ const users: DemoUser[] = [
     email: "admin@kes.local",
     passwordHash: hashSync("admin123", 10),
     role: MembershipRole.OWNER,
+    platformRole: "SUPERADMIN",
     active: true,
     color: "#0f172a",
     timezone: "America/Sao_Paulo",
@@ -111,6 +114,7 @@ const users: DemoUser[] = [
     email: "consultor@kes.local",
     passwordHash: hashSync("user12345", 10),
     role: MembershipRole.MEMBER,
+    platformRole: "USER",
     active: true,
     color: "#2563eb",
     timezone: "America/Sao_Paulo",

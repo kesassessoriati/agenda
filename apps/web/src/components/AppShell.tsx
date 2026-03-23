@@ -96,6 +96,11 @@ export function AppShell() {
                 Administrador
               </NavLink>
             ) : null}
+            {user?.platformRole === "SUPERADMIN" ? (
+              <NavLink to="/plataforma" style={navLinkStyles}>
+                Plataforma
+              </NavLink>
+            ) : null}
           </Stack>
 
           {user && user.memberships.length > 1 ? (

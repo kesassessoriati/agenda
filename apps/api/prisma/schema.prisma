@@ -7,10 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PlatformRole {
+  USER
+  SUPERADMIN
+}
+
 enum MembershipRole {
   OWNER
   ADMIN
   MEMBER
+}
+
+enum CompanyPlan {
+  FREE
+  BASIC
+  PREMIUM
 }
 
 enum ScheduleUserRole {
@@ -32,6 +43,7 @@ model Company {
   name          String
   slug          String                      @unique
   timezone      String                      @default("America/Sao_Paulo")
+  plan          CompanyPlan                 @default(FREE)
   memberships   Membership[]
   invitations   CompanyInvitation[]
   schedules     Schedule[]
@@ -49,6 +61,7 @@ model User {
   name                String
   email               String              @unique
   passwordHash        String
+  platformRole        PlatformRole        @default(USER)
   active              Boolean             @default(true)
   color               String?
   timezone            String              @default("America/Sao_Paulo")

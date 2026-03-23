@@ -10,6 +10,7 @@ type JwtPayload = {
   membershipId: string;
   companyId: string;
   role: "OWNER" | "ADMIN" | "MEMBER";
+  platformRole: "USER" | "SUPERADMIN";
 };
 
 export async function authMiddleware(request: Request, _response: Response, next: NextFunction) {
@@ -33,11 +34,13 @@ export async function authMiddleware(request: Request, _response: Response, next
       membershipId: payload.membershipId ?? "demo-membership-owner",
       companyId: payload.companyId,
       role: payload.role,
+      platformRole: payload.platformRole ?? "USER",
       company: {
         id: payload.companyId,
         name: "KES Demo",
         slug: "kes-demo",
         timezone: "America/Sao_Paulo",
+        plan: "FREE",
       },
     };
 
@@ -54,6 +57,7 @@ export async function authMiddleware(request: Request, _response: Response, next
     membershipId: membership.id,
     companyId: membership.companyId,
     role: membership.role,
+    platformRole: membership.user.platformRole,
     company: membership.company,
   };
 

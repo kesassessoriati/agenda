@@ -1,12 +1,15 @@
+export type PlatformRole = "USER" | "SUPERADMIN";
 export type WorkspaceRole = "OWNER" | "ADMIN" | "MEMBER";
 export type InvitationStatus = "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
 export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+export type CompanyPlan = "FREE" | "BASIC" | "PREMIUM";
 
 export interface CompanySummary {
   id: string;
   name: string;
   slug: string;
   timezone: string;
+  plan: CompanyPlan;
 }
 
 export interface WorkspaceMembershipSummary {
@@ -25,6 +28,7 @@ export interface AuthUser {
   name: string;
   email: string;
   color?: string | null;
+  platformRole: PlatformRole;
   role: WorkspaceRole;
   timezone: string;
   company: CompanySummary;
@@ -193,4 +197,54 @@ export interface InvitationPreview {
     email: string;
   };
   existingUser: boolean;
+}
+
+export interface PlatformCompanyOverview {
+  id: string;
+  name: string;
+  slug: string;
+  timezone: string;
+  plan: CompanyPlan;
+  createdAt: string;
+  updatedAt: string;
+  metrics: {
+    memberships: number;
+    activeMemberships: number;
+    owners: number;
+    admins: number;
+    schedules: number;
+    appointments: number;
+    invitations: number;
+  };
+  owners: Array<{
+    id: string;
+    name: string;
+    email: string;
+  }>;
+}
+
+export interface PlatformCompanyDetail extends PlatformCompanyOverview {
+  members: Array<{
+    id: string;
+    role: WorkspaceRole;
+    active: boolean;
+    joinedAt: string;
+    lastAccessedAt?: string | null;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      active: boolean;
+      platformRole: PlatformRole;
+    };
+  }>;
+  invitations: Array<{
+    id: string;
+    email: string;
+    role: WorkspaceRole;
+    acceptedAt?: string | null;
+    revokedAt?: string | null;
+    expiresAt: string;
+    createdAt: string;
+  }>;
 }
