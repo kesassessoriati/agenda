@@ -20,8 +20,8 @@ export function LoginPage() {
   const showToast = useUiStore((state) => state.showToast);
   const { control, handleSubmit } = useForm<LoginValues>({
     defaultValues: {
-      email: "admin@kes.local",
-      password: "admin123",
+      email: "",
+      password: "",
     },
   });
 
@@ -88,9 +88,6 @@ export function LoginPage() {
             <Stack spacing={3}>
               <Box>
                 <Typography variant="h4">Entrar</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Ambiente de demonstração já preenchido com um usuário administrador.
-                </Typography>
               </Box>
 
               <Controller name="email" control={control} render={({ field }) => <TextField {...field} label="E-mail" fullWidth />} />
@@ -100,9 +97,6 @@ export function LoginPage() {
                 {mutation.isPending ? "Entrando..." : "Acessar sistema"}
               </Button>
 
-              <Typography variant="caption" color="text.secondary">
-                Admin demo: `admin@kes.local` / `admin123`
-              </Typography>
             </Stack>
           </Paper>
         </Box>
