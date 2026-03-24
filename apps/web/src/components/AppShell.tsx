@@ -154,7 +154,9 @@ export function AppShell() {
         >
           {subscriptionStatus.kind === "expired"
             ? `Sua assinatura expirou há ${subscriptionStatus.daysOverdue} dia${subscriptionStatus.daysOverdue !== 1 ? "s" : ""}. Entre em contato para renovar.`
-            : `Sua assinatura vence em ${subscriptionStatus.daysRemaining} dia${subscriptionStatus.daysRemaining !== 1 ? "s" : ""}.`}
+            : subscriptionStatus.kind === "expiring_soon"
+              ? `Sua assinatura vence em ${subscriptionStatus.daysRemaining} dia${subscriptionStatus.daysRemaining !== 1 ? "s" : ""}.`
+              : null}
         </Alert>
       ) : null}
 
