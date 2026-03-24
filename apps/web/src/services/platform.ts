@@ -16,6 +16,7 @@ export async function createPlatformCompany(payload: {
   companySlug?: string;
   timezone?: string;
   plan: CompanyPlan;
+  planExpiresAt?: string | null;
   ownerName?: string;
   ownerEmail: string;
   ownerPassword?: string;
@@ -31,6 +32,7 @@ export async function updatePlatformCompany(
     companySlug?: string;
     timezone?: string;
     plan?: CompanyPlan;
+    planExpiresAt?: string | null;
   },
 ) {
   const { data } = await api.patch<{ company: PlatformCompanyDetail }>(`/platform/companies/${companyId}`, payload);

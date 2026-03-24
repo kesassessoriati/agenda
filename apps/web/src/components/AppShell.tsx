@@ -1,6 +1,8 @@
 import EventAvailableRounded from "@mui/icons-material/EventAvailableRounded";
 import LogoutRounded from "@mui/icons-material/LogoutRounded";
+import WarningAmberRounded from "@mui/icons-material/WarningAmberRounded";
 import {
+  Alert,
   AppBar,
   Box,
   Button,
@@ -18,6 +20,7 @@ import { switchWorkspace } from "../services/auth";
 import { useAuthStore } from "../store/auth-store";
 import { useUiStore } from "../store/ui-store";
 import { getErrorMessage } from "../utils/error";
+import { getSubscriptionStatus, shouldShowExpirationWarning } from "../utils/subscription";
 
 const navLinkStyles = ({ isActive }: { isActive: boolean }) => ({
   textDecoration: "none",
@@ -45,6 +48,11 @@ export function AppShell() {
     },
     onError: (error) => showToast(getErrorMessage(error), "error"),
   });
+
+  const subscriptionStatus = user
+    ? getSubscriptionStatus(user.company.plan, user.company.planExpiresAt)
+    : null;
+  const showExpirationBanner = subscriptionStatus !== null && shouldShowExpirationWarning(subscriptionStatus);
 
   return (
     <Box sx={{ minHeight: "100vh", background: "radial-gradient(circle at top left, rgba(15,118,110,0.10), transparent 30%), linear-gradient(180deg, #f4f7f3 0%, #eef4ff 100%)" }}>
@@ -137,6 +145,18 @@ export function AppShell() {
           </Button>
         </Toolbar>
       </AppBar>
+
+      {showExpirationBanner && subscriptionStatus ? (
+        <Alert
+          severity={subscriptionStatus.kind === "expired" ? "error" : "warning"}
+          icon={<WarningAmberRounded />}
+          sx={{ borderRadius: 0, justifyContent: "center" }}
+        >
+          {subscriptionStatus.kind === "expired"
+            ? `Sua assinatura expirou há ${subscriptionStatus.daysOverdue} dia${subscriptionStatus.daysOverdue !== 1 ? "s" : ""}. Entre em contato para renovar.`
+            : `Sua assinatura vence em ${subscriptionStatus.daysRemaining} dia${subscriptionStatus.daysRemaining !== 1 ? "s" : ""}.`}
+        </Alert>
+      ) : null}
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Outlet />

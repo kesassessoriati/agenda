@@ -22,6 +22,7 @@ enum CompanyPlan {
   FREE
   BASIC
   PREMIUM
+  UNLIMITED
 }
 
 enum ScheduleUserRole {
@@ -44,6 +45,7 @@ model Company {
   slug          String                      @unique
   timezone      String                      @default("America/Sao_Paulo")
   plan          CompanyPlan                 @default(FREE)
+  planExpiresAt DateTime?
   memberships   Membership[]
   invitations   CompanyInvitation[]
   schedules     Schedule[]

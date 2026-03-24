@@ -40,7 +40,8 @@ export async function authMiddleware(request: Request, _response: Response, next
         name: "KES Demo",
         slug: "kes-demo",
         timezone: "America/Sao_Paulo",
-        plan: "FREE",
+        plan: "FREE" as const,
+        planExpiresAt: null,
       },
     };
 

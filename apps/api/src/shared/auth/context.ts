@@ -11,7 +11,8 @@ export type AuthContext = {
     name: string;
     slug: string;
     timezone: string;
-    plan: "FREE" | "BASIC" | "PREMIUM";
+    plan: "FREE" | "BASIC" | "PREMIUM" | "UNLIMITED";
+    planExpiresAt: Date | null;
   };
 };
 

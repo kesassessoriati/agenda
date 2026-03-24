@@ -11,6 +11,7 @@ const companySummarySelect = {
   slug: true,
   timezone: true,
   plan: true,
+  planExpiresAt: true,
 } satisfies Prisma.CompanySelect;
 
 const membershipSessionInclude = {

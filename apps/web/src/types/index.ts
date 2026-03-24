@@ -2,7 +2,7 @@ export type PlatformRole = "USER" | "SUPERADMIN";
 export type WorkspaceRole = "OWNER" | "ADMIN" | "MEMBER";
 export type InvitationStatus = "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
 export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
-export type CompanyPlan = "FREE" | "BASIC" | "PREMIUM";
+export type CompanyPlan = "FREE" | "BASIC" | "PREMIUM" | "UNLIMITED";
 
 export interface CompanySummary {
   id: string;
@@ -10,6 +10,7 @@ export interface CompanySummary {
   slug: string;
   timezone: string;
   plan: CompanyPlan;
+  planExpiresAt?: string | null;
 }
 
 export interface WorkspaceMembershipSummary {
@@ -205,6 +206,7 @@ export interface PlatformCompanyOverview {
   slug: string;
   timezone: string;
   plan: CompanyPlan;
+  planExpiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
   metrics: {

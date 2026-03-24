@@ -34,22 +34,43 @@ import { useUiStore } from "../store/ui-store";
 import type { CompanyPlan } from "../types";
 import { getErrorMessage } from "../utils/error";
 import { formatDateTime } from "../utils/format";
+import { getSubscriptionStatus } from "../utils/subscription";
 
 type CompanyFormValues = {
   companyName: string;
   companySlug: string;
   timezone: string;
   plan: CompanyPlan;
+  planExpiresAt: string;
   ownerName: string;
   ownerEmail: string;
   ownerPassword: string;
 };
 
+const ALL_PLANS: CompanyPlan[] = ["FREE", "BASIC", "PREMIUM", "UNLIMITED"];
+
 const planLabels: Record<CompanyPlan, string> = {
   FREE: "Free",
   BASIC: "Basic",
   PREMIUM: "Premium",
+  UNLIMITED: "Ilimitado",
 };
+
+const planColors: Record<CompanyPlan, "default" | "primary" | "success" | "warning"> = {
+  FREE: "default",
+  BASIC: "primary",
+  PREMIUM: "warning",
+  UNLIMITED: "success",
+};
+
+function formatExpiryLabel(plan: CompanyPlan, planExpiresAt?: string | null): string {
+  const status = getSubscriptionStatus(plan, planExpiresAt);
+  if (status.kind === "unlimited") return "Ilimitado";
+  if (status.kind === "no_expiry") return "—";
+  if (status.kind === "expired") return `Expirado há ${status.daysOverdue}d`;
+  if (status.kind === "expiring_soon") return `Vence em ${status.daysRemaining}d`;
+  return `${status.daysRemaining}d restantes`;
+}
 
 export function PlatformPage() {
   const user = useAuthStore((state) => state.user);
@@ -57,17 +78,20 @@ export function PlatformPage() {
   const queryClient = useQueryClient();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [companyToDelete, setCompanyToDelete] = useState<{ id: string; name: string } | null>(null);
-  const { control, handleSubmit, reset } = useForm<CompanyFormValues>({
+  const { control, handleSubmit, reset, watch } = useForm<CompanyFormValues>({
     defaultValues: {
       companyName: "",
       companySlug: "",
       timezone: "America/Sao_Paulo",
       plan: "FREE",
+      planExpiresAt: "",
       ownerName: "",
       ownerEmail: "",
       ownerPassword: "",
     },
   });
+
+  const formPlan = watch("plan");
 
   const companiesQuery = useQuery({
     queryKey: ["platform-companies"],
@@ -91,6 +115,7 @@ export function PlatformPage() {
         companySlug: "",
         timezone: "America/Sao_Paulo",
         plan: "FREE",
+        planExpiresAt: "",
         ownerName: "",
         ownerEmail: "",
         ownerPassword: "",
@@ -101,7 +126,8 @@ export function PlatformPage() {
   });
 
   const updateCompanyMutation = useMutation({
-    mutationFn: ({ companyId, payload }: { companyId: string; payload: { plan?: CompanyPlan } }) => updatePlatformCompany(companyId, payload),
+    mutationFn: ({ companyId, payload }: { companyId: string; payload: { plan?: CompanyPlan; planExpiresAt?: string | null } }) =>
+      updatePlatformCompany(companyId, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["platform-companies"] });
       queryClient.invalidateQueries({ queryKey: ["platform-company", variables.companyId] });
@@ -158,8 +184,9 @@ export function PlatformPage() {
           { label: "Empresas", value: companies.length },
           { label: "Free", value: companies.filter((company) => company.plan === "FREE").length },
           { label: "Premium", value: companies.filter((company) => company.plan === "PREMIUM").length },
+          { label: "Ilimitado", value: companies.filter((company) => company.plan === "UNLIMITED").length },
         ].map((item) => (
-          <Grid size={{ xs: 12, md: 4 }} key={item.label}>
+          <Grid size={{ xs: 6, md: 3 }} key={item.label}>
             <Paper elevation={0} sx={{ p: 3, borderRadius: 0 }}>
               <Typography color="text.secondary">{item.label}</Typography>
               <Typography variant="h3">{item.value}</Typography>
@@ -191,7 +218,7 @@ export function PlatformPage() {
                 control={control}
                 render={({ field }) => (
                   <TextField {...field} select label="Plano" fullWidth>
-                    {(["FREE", "BASIC", "PREMIUM"] as CompanyPlan[]).map((plan) => (
+                    {ALL_PLANS.map((plan) => (
                       <MenuItem key={plan} value={plan}>
                         {planLabels[plan]}
                       </MenuItem>
@@ -199,6 +226,22 @@ export function PlatformPage() {
                   </TextField>
                 )}
               />
+              {formPlan !== "UNLIMITED" ? (
+                <Controller
+                  name="planExpiresAt"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      type="date"
+                      label="Vencimento do plano (opcional)"
+                      helperText="Deixe em branco para plano sem data de expiração."
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  )}
+                />
+              ) : null}
               <Controller name="ownerName" control={control} render={({ field }) => <TextField {...field} label="Nome do responsável" fullWidth />} />
               <Controller name="ownerEmail" control={control} render={({ field }) => <TextField {...field} label="E-mail do responsável" fullWidth />} />
               <Controller
@@ -223,6 +266,7 @@ export function PlatformPage() {
                     companySlug: values.companySlug || undefined,
                     ownerName: values.ownerName || undefined,
                     ownerPassword: values.ownerPassword || undefined,
+                    planExpiresAt: values.plan === "UNLIMITED" || !values.planExpiresAt ? null : values.planExpiresAt,
                   })
                 )}
                 disabled={createCompanyMutation.isPending}
@@ -248,6 +292,7 @@ export function PlatformPage() {
                   <TableRow>
                     <TableCell>Empresa</TableCell>
                     <TableCell>Plano</TableCell>
+                    <TableCell>Expiração</TableCell>
                     <TableCell>Métricas</TableCell>
                     <TableCell align="right">Ações</TableCell>
                   </TableRow>
@@ -279,16 +324,40 @@ export function PlatformPage() {
                           onChange={(event) =>
                             updateCompanyMutation.mutate({
                               companyId: company.id,
-                              payload: { plan: event.target.value as CompanyPlan },
+                              payload: {
+                                plan: event.target.value as CompanyPlan,
+                                planExpiresAt: event.target.value === "UNLIMITED" ? null : undefined,
+                              },
                             })
                           }
                         >
-                          {(["FREE", "BASIC", "PREMIUM"] as CompanyPlan[]).map((plan) => (
+                          {ALL_PLANS.map((plan) => (
                             <MenuItem key={plan} value={plan}>
                               {planLabels[plan]}
                             </MenuItem>
                           ))}
                         </TextField>
+                      </TableCell>
+                      <TableCell>
+                        {company.plan !== "UNLIMITED" ? (
+                          <TextField
+                            type="date"
+                            size="small"
+                            value={company.planExpiresAt ? company.planExpiresAt.slice(0, 10) : ""}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) =>
+                              updateCompanyMutation.mutate({
+                                companyId: company.id,
+                                payload: { planExpiresAt: event.target.value || null },
+                              })
+                            }
+                            sx={{ minWidth: 150 }}
+                          />
+                        ) : (
+                          <Typography variant="body2" color="success.main" fontWeight={700}>
+                            Ilimitado
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
@@ -320,7 +389,26 @@ export function PlatformPage() {
                 <Stack direction="row" spacing={1} alignItems="center">
                   <WorkspacePremiumRounded color="primary" />
                   <Typography variant="h5">{selectedCompany.name}</Typography>
-                  <Chip label={planLabels[selectedCompany.plan]} color="primary" variant="outlined" />
+                  <Chip
+                    label={planLabels[selectedCompany.plan]}
+                    color={planColors[selectedCompany.plan]}
+                    variant="outlined"
+                  />
+                  <Chip
+                    label={formatExpiryLabel(selectedCompany.plan, selectedCompany.planExpiresAt)}
+                    size="small"
+                    color={
+                      selectedCompany.plan === "UNLIMITED"
+                        ? "success"
+                        : !selectedCompany.planExpiresAt
+                          ? "default"
+                          : getSubscriptionStatus(selectedCompany.plan, selectedCompany.planExpiresAt).kind === "expired"
+                            ? "error"
+                            : getSubscriptionStatus(selectedCompany.plan, selectedCompany.planExpiresAt).kind === "expiring_soon"
+                              ? "warning"
+                              : "default"
+                    }
+                  />
                 </Stack>
                 <Typography color="text.secondary">
                   {selectedCompany.slug} • timezone {selectedCompany.timezone} • atualizado em {formatDateTime(selectedCompany.updatedAt)}

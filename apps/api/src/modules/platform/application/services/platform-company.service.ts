@@ -17,7 +17,8 @@ function serializeCompanyOverview(company: {
   name: string;
   slug: string;
   timezone: string;
-  plan: "FREE" | "BASIC" | "PREMIUM";
+  plan: "FREE" | "BASIC" | "PREMIUM" | "UNLIMITED";
+  planExpiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   _count: {
@@ -46,6 +47,7 @@ function serializeCompanyOverview(company: {
     slug: company.slug,
     timezone: company.timezone,
     plan: company.plan,
+    planExpiresAt: company.planExpiresAt,
     createdAt: company.createdAt,
     updatedAt: company.updatedAt,
     metrics: {
@@ -209,6 +211,7 @@ export async function createPlatformCompany(auth: AuthContext, input: unknown) {
         slug: companySlug,
         timezone: payload.timezone,
         plan: payload.plan,
+        planExpiresAt: payload.plan === "UNLIMITED" ? null : (payload.planExpiresAt ?? null),
       },
     });
 
@@ -266,6 +269,14 @@ export async function updatePlatformCompany(auth: AuthContext, companyId: string
         ? await generateUniqueCompanySlug(payload.companyName, companyId)
         : current.slug;
 
+  const nextPlan = payload.plan ?? current.plan;
+  const nextPlanExpiresAt =
+    nextPlan === "UNLIMITED"
+      ? null
+      : payload.planExpiresAt !== undefined
+        ? payload.planExpiresAt
+        : current.planExpiresAt;
+
   await prisma.company.update({
     where: {
       id: companyId,
@@ -274,7 +285,8 @@ export async function updatePlatformCompany(auth: AuthContext, companyId: string
       name: payload.companyName ?? current.name,
       slug: nextSlug,
       timezone: payload.timezone ?? current.timezone,
-      plan: payload.plan ?? current.plan,
+      plan: nextPlan,
+      planExpiresAt: nextPlanExpiresAt,
     },
   });
 
