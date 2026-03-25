@@ -36,7 +36,6 @@ type PasswordFormValues = {
 
 export function ProfilePage() {
   const user = useAuthStore((state) => state.user);
-  const token = useAuthStore((state) => state.token);
   const setSession = useAuthStore((state) => state.setSession);
   const showToast = useUiStore((state) => state.showToast);
 
@@ -125,7 +124,7 @@ export function ProfilePage() {
             onSubmit={handleProfileSubmit((values) => profileMutation.mutate(values))}
           >
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="name"
                   control={profileControl}
@@ -151,7 +150,7 @@ export function ProfilePage() {
                   )}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Controller
                   name="email"
                   control={profileControl}
