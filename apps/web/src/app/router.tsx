@@ -18,6 +18,7 @@ const AppointmentsPage = lazy(() => import("../pages/AppointmentsPage").then((mo
 const SchedulesPage = lazy(() => import("../pages/SchedulesPage").then((module) => ({ default: module.SchedulesPage })));
 const AdminPage = lazy(() => import("../pages/AdminPage").then((module) => ({ default: module.AdminPage })));
 const PlatformPage = lazy(() => import("../pages/PlatformPage").then((module) => ({ default: module.PlatformPage })));
+const ProfilePage = lazy(() => import("../pages/ProfilePage").then((module) => ({ default: module.ProfilePage })));
 
 function ProtectedRoute() {
   const token = useAuthStore((state) => state.token);
@@ -102,6 +103,7 @@ export function AppRouter() {
               <Route index element={<Navigate to="/compromissos" replace />} />
               <Route path="/compromissos" element={<AppointmentsPage />} />
               <Route path="/agendas" element={<SchedulesPage />} />
+              <Route path="/perfil" element={<ProfilePage />} />
               <Route
                 path="/administrador"
                 element={

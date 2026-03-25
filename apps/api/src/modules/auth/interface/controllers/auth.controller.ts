@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { buildAuthSession, getMembershipByIdForUser } from "../../../../shared/auth/session.js";
 import { AppError } from "../../../../shared/errors/app-error.js";
 import { loginUseCase, meUseCase } from "../../application/use-cases/login.use-case.js";
+import { changePasswordUseCase, updateProfileUseCase } from "../../application/use-cases/profile.use-case.js";
 
 export const authController = {
   async login(request: Request, response: Response) {
@@ -35,6 +36,24 @@ export const authController = {
     }
 
     const result = await buildAuthSession(request.auth.userId, membership.id);
+    return response.json(result);
+  },
+
+  async updateProfile(request: Request, response: Response) {
+    if (!request.auth) {
+      throw new AppError("Sessão inválida.", 401);
+    }
+
+    const result = await updateProfileUseCase(request.auth, request.body);
+    return response.json(result);
+  },
+
+  async changePassword(request: Request, response: Response) {
+    if (!request.auth) {
+      throw new AppError("Sessão inválida.", 401);
+    }
+
+    const result = await changePasswordUseCase(request.auth, request.body);
     return response.json(result);
   },
 };

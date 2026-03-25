@@ -25,6 +25,8 @@ export function registerRoutes(app: Express) {
   privateRouter.use(authMiddleware);
   privateRouter.get("/auth/me", authController.me);
   privateRouter.post("/auth/switch-workspace", authController.switchWorkspace);
+  privateRouter.patch("/auth/profile", authController.updateProfile);
+  privateRouter.post("/auth/change-password", authController.changePassword);
   privateRouter.get("/users", userController.listAssignable);
   privateRouter.get("/platform/companies", platformCompanyController.list);
   privateRouter.get("/platform/companies/:companyId", platformCompanyController.get);

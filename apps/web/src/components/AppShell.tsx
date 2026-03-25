@@ -1,3 +1,4 @@
+import AccountCircleRounded from "@mui/icons-material/AccountCircleRounded";
 import EventAvailableRounded from "@mui/icons-material/EventAvailableRounded";
 import LogoutRounded from "@mui/icons-material/LogoutRounded";
 import WarningAmberRounded from "@mui/icons-material/WarningAmberRounded";
@@ -128,9 +129,20 @@ export function AppShell() {
             </TextField>
           ) : null}
 
-          <Typography variant="body2" sx={{ color: "#64748b", fontWeight: 700 }}>
+          <Button
+            component={NavLink}
+            to="/perfil"
+            startIcon={<AccountCircleRounded />}
+            sx={{
+              color: "#64748b",
+              fontWeight: 700,
+              textTransform: "none",
+              fontSize: "0.875rem",
+              "&:hover": { background: "rgba(15,23,42,0.06)" },
+            }}
+          >
             {user?.name}
-          </Typography>
+          </Button>
           <Button
             variant="outlined"
             color="inherit"
