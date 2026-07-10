@@ -1,11 +1,25 @@
+# Dependencias e builds
 node_modules
 dist
-.env
-.env.local
 apps/api/node_modules
 apps/web/node_modules
 apps/api/dist
 apps/web/dist
+
+# Variaveis de ambiente e credenciais (NUNCA commitar)
+.env
+.env.local
+.env.*.local
 apps/api/.env
 apps/web/.env
 .build.env
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
+# Sistema operacional / editor
+.DS_Store
+Thumbs.db

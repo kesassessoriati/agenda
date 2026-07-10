@@ -21,9 +21,9 @@ services:
       - SMTP_HOST=smtp-relay.brevo.com
       - SMTP_PORT=587
       - SMTP_SECURE=false
-      - SMTP_USER=a3a7af001@smtp-brevo.com
-      - SMTP_PASS=xsmtpsib-97058eca829c77f89275e8b4d3d3a6dccc2069842b92b69ed35282cf321543b7-fQ9GHn9Qk7zAjgej
-      - SMTP_FROM=KES Agenda <a3a7af001@smtp-brevo.com>
+      - SMTP_USER=${AGENDA_SMTP_USER}
+      - SMTP_PASS=${AGENDA_SMTP_PASS}
+      - SMTP_FROM=KES Agenda <${AGENDA_SMTP_USER}>
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3333/api/health >/dev/null 2>&1 || exit 1"]
       interval: 30s
