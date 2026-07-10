@@ -1,0 +1,66 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: docker-build-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME || secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      BACKEND_IMAGE: ${{ vars.BACKEND_IMAGE || 'kesassessoria/agenda-backend' }}
+      FRONTEND_IMAGE: ${{ vars.FRONTEND_IMAGE || 'kesassessoria/agenda-frontend' }}
+      VITE_API_URL: ${{ vars.VITE_API_URL || 'https://apiagenda.kesassessoria.com/api' }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Hub credentials
+        run: |
+          if [ -z "${DOCKERHUB_USERNAME}" ] || [ -z "${DOCKERHUB_TOKEN}" ]; then
+            echo "::error::Configure os secrets do repositorio para Docker Hub antes de rodar este workflow."
+            echo "::error::Necessario: DOCKERHUB_USERNAME e DOCKERHUB_TOKEN (secrets)."
+            exit 1
+          fi
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Make script executable
+        run: chmod +x build_and_push.sh
+
+      - name: Run build and push script
+        if: github.event_name != 'pull_request'
+        run: ./build_and_push.sh
+
+      - name: Build only (pull request validation)
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "PR build - validacao sem push para o registry."
+
+          docker build \
+            --target api-runner \
+            -t agenda-backend:pr-${{ github.event.pull_request.number }} \
+            .
+
+          docker build \
+            --target web-runner \
+            --build-arg VITE_API_URL="${VITE_API_URL}" \
+            -t agenda-frontend:pr-${{ github.event.pull_request.number }} \
+            .
+
+          echo "::notice::Build de PR concluido localmente. Nenhuma imagem publicada no registry."

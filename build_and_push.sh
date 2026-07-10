@@ -4,15 +4,18 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$ROOT_DIR/.build.env"
 
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "Arquivo $ENV_FILE nao encontrado."
-  echo "Copie .build.env.example para .build.env e preencha as credenciais."
+## Em maquina local as credenciais vem do .build.env; no CI (GitHub Actions)
+## as variaveis ja chegam pelo ambiente e o arquivo e dispensavel.
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  source "$ENV_FILE"
+  set +a
+elif [[ -z "${DOCKERHUB_USERNAME:-}" || -z "${DOCKERHUB_TOKEN:-}" ]]; then
+  echo "Arquivo $ENV_FILE nao encontrado e credenciais ausentes no ambiente."
+  echo "Copie .build.env.example para .build.env e preencha as credenciais,"
+  echo "ou exporte DOCKERHUB_USERNAME/DOCKERHUB_TOKEN/BACKEND_IMAGE/FRONTEND_IMAGE/VITE_API_URL."
   exit 1
 fi
-
-set -a
-source "$ENV_FILE"
-set +a
 
 required_vars=(
   DOCKERHUB_USERNAME

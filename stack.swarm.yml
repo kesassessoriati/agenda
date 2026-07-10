@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   agenda_api:
-    image: williamwilmer10/agenda-backend:latest
+    image: kesassessoria/agenda-backend:latest
     networks:
       - kesnet
     environment:
@@ -54,7 +54,7 @@ services:
         - traefik.http.services.agenda-api.loadbalancer.passHostHeader=true
 
   agenda_web:
-    image: williamwilmer10/agenda-frontend:latest
+    image: kesassessoria/agenda-frontend:latest
     networks:
       - kesnet
     healthcheck:
